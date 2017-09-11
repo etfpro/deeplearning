@@ -69,7 +69,6 @@ def numerical_gradient(f, x):
 
     grad = np.zeros_like(x)
 
-    print("size of x =", x.size)
     for i in range(x.size):
         org_x = x[i]
 
@@ -84,6 +83,20 @@ def numerical_gradient(f, x):
         x[i] = org_x
 
     return grad
+
+
+# 경사하강 기울기 조절
+def gradient_descent(f, init_w, lr=0.01, step_num=100):
+    w = init_w
+    w_history = []
+
+    for i in range(step_num):
+        w_history.append(w.copy())
+        w -= lr * numerical_gradient(f, w)
+
+    return w, np.array(w_history)
+
+
 
 
 ################################################################################
@@ -101,6 +114,16 @@ def function_2(x):
 
 
 if __name__ == '__main__':
+    init_x = np.array([-3.0, 4.0])
+    x, x_history = gradient_descent(function_2, init_x, lr=0.1)
+    print(x)
 
-    print(numerical_gradient(function_2, np.array([3.0, 4.0])))
-    print(numerical_gradient(function_2, np.array([0.0, 2.0])))
+    plt.plot([-5, 5], [0, 0], '--b')
+    plt.plot([0, 0], [-5, 5], '--b')
+    plt.plot(x_history[:, 0], x_history[:, 1], 'o')
+
+    plt.xlim(-3.5, 3.5)
+    plt.ylim(-4.5, 4.5)
+    plt.xlabel("X0")
+    plt.ylabel("X1")
+    plt.show()
