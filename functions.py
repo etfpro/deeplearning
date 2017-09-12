@@ -42,13 +42,16 @@ def mean_squared_error(y, t):
 
 # 교차엔트로피오차 함수
 def cross_entropy_error(y, t):
-    if y.dim == 1:
+    if y.ndim == 1:
         t = t.reshape(1, t.size)
         y = y.reshape(1, y.size)
 
-    batch_size = y.shape[0]
+    # 훈련 데이터가 원-핫 벡터라면 정답 레이블의 인덱스로 반환
+    if t.size == y.size:
+        t = t.argmax(axis=1)
 
-    return -np.sum(t * np.log(y + 1e-7)) / batch_size
+    batch_size = y.shape[0]
+    return -np.sum(np.log(y[np.arange(batch_size), t])) / batch_size
 
 
 
@@ -84,6 +87,27 @@ def numerical_gradient(f, x):
 
     return grad
 
+"""
+def numerical_gradient(f, x):
+    h = 1e-4  # 0.0001
+    grad = np.zeros_like(x)
+
+    it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
+    while not it.finished:
+        idx = it.multi_index
+        tmp_val = x[idx]
+        x[idx] = float(tmp_val) + h
+        fxh1 = f(x)  # f(x+h)
+
+        x[idx] = tmp_val - h
+        fxh2 = f(x)  # f(x-h)
+        grad[idx] = (fxh1 - fxh2) / (2 * h)
+
+        x[idx] = tmp_val  # 값 복원
+        it.iternext()
+
+    return grad
+"""
 
 # 경사하강 기울기 조절
 def gradient_descent(f, init_w, lr=0.01, step_num=100):
@@ -114,16 +138,4 @@ def function_2(x):
 
 
 if __name__ == '__main__':
-    init_x = np.array([-3.0, 4.0])
-    x, x_history = gradient_descent(function_2, init_x, lr=0.1)
-    print(x)
-
-    plt.plot([-5, 5], [0, 0], '--b')
-    plt.plot([0, 0], [-5, 5], '--b')
-    plt.plot(x_history[:, 0], x_history[:, 1], 'o')
-
-    plt.xlim(-3.5, 3.5)
-    plt.ylim(-4.5, 4.5)
-    plt.xlabel("X0")
-    plt.ylabel("X1")
-    plt.show()
+    pass
