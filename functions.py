@@ -68,27 +68,6 @@ def numerical_diff(f, x):
 
 # 기울기
 def numerical_gradient(f, x):
-    h = 1e-4
-
-    grad = np.zeros_like(x)
-
-    for i in range(x.size):
-        org_x = x[i]
-
-        x[i] = org_x + h
-        f1 = f(x)
-
-        x[i] = org_x - h
-        f2 = f(x)
-
-        grad[i] = (f1 - f2) / (2 * h)
-
-        x[i] = org_x
-
-    return grad
-
-"""
-def numerical_gradient(f, x):
     h = 1e-4  # 0.0001
     grad = np.zeros_like(x)
 
@@ -107,7 +86,7 @@ def numerical_gradient(f, x):
         it.iternext()
 
     return grad
-"""
+
 
 # 경사하강 기울기 조절
 def gradient_descent(f, init_w, lr=0.01, step_num=100):

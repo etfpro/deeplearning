@@ -19,12 +19,12 @@ class simpleNet:
         return func.cross_entropy_error(y, t)
 
 
-net = simpleNet();
+net = simpleNet()
 
 x = np.array([0.6, 0.9])
 y = net.predict(x)
 print(y)
-
 t = np.array([0, 0, 1])
-print(net.loss(x, t))
 
+dW = func.numerical_gradient(lambda w: net.loss(x, t), net.W)
+print(dW)
