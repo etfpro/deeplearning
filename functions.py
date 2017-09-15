@@ -66,7 +66,7 @@ def numerical_diff(f, x):
     return (f(x + h) - f(x - h)) / (2 * h)
 
 
-# 기울기
+# 기울기 계산 (미분)
 def numerical_gradient(f, x):
     h = 1e-4  # 0.0001
     grad = np.zeros_like(x)
