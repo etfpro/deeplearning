@@ -29,6 +29,48 @@ def softmax(x):
 
 
 
+class Relu:
+    def __init__(self):
+        self.mask = None
+
+
+    def forward(self, x):
+        self.mask = (x <= 0)
+        out = x.copy()
+        out[self.mask] = 0
+        return out
+
+    def forward2(self, x):
+        self.mask = (x <= 0)
+        return np.max(0, x)
+
+
+    def backward(self, dout):
+        dout[self.mask] = 0
+        return dout;
+
+
+
+class Sigmoid:
+    def __init__(self):
+        self.out = None;
+
+
+    def forward(self, x):
+        self.out = 1.0 / (1.0 + np.exp(-p))
+        return self.out
+
+
+    def backward(self, dout):
+        return dout * (1.0 - self.out) * self.out
+
+
+
+
+
+
+
+
 ################################################################################
 #
 # Activation Functions (활성화 함수들)
@@ -102,6 +144,12 @@ def gradient_descent(f, init_w, lr=0.01, step_num=100):
 
 
 
+
+
+
+
+
+
 ################################################################################
 #
 # 테스트
@@ -117,4 +165,6 @@ def function_2(x):
 
 
 if __name__ == '__main__':
-    pass
+    x = np.array([[1.0, -0.5], [-2.0, 3.0]])
+    print(x)
+
