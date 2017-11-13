@@ -1,8 +1,6 @@
 # neuralNetwork Class
 
 import numpy as np
-import scipy.special
-
 
 class neuralNetwork:
 
@@ -71,8 +69,8 @@ class neuralNetwork:
 
         # 은닉층 오차 (출력층 오차 X 출력층 가중치의 전치행렬)
         hidden_errors =  np.dot(final_errors, self.final_weights.T)
-        if self.debugMode:
-            print(">> Hidden Errors(training...) <<\n", hidden_errors)
+        #if self.debugMode:
+        #    print(">> Hidden Errors(training...) <<\n", hidden_errors)
 
 
         ########################################################################
@@ -80,18 +78,18 @@ class neuralNetwork:
         ########################################################################
 
         # 출력층 가중치 업데이트
-        if self.debugMode:
-            print(">> Final Weiths Before Update(training...) <<\n", self.final_weights)
+        #if self.debugMode:
+        #    print(">> Final Weiths Before Update(training...) <<\n", self.final_weights)
         self.updateWeights(self.final_weights, final_errors, hidden_outputs, final_outputs)
-        if self.debugMode:
-            print(">> Final Weiths After Update(training...) <<\n", self.final_weights)
+        #if self.debugMode:
+        #    print(">> Final Weiths After Update(training...) <<\n", self.final_weights)
 
         # 은닉층 가중치 업데이트
-        if self.debugMode:
-            print(">> Hidden Weiths Before Update(training...) <<\n", self.hidden_weights)
+        #if self.debugMode:
+        #    print(">> Hidden Weiths Before Update(training...) <<\n", self.hidden_weights)
         self.updateWeights(self.hidden_weights, hidden_errors, inputs, hidden_outputs)
-        if self.debugMode:
-            print(">> Hidden Weiths After Update(training...) <<\n", self.hidden_weights)
+        #if self.debugMode:
+        #    print(">> Hidden Weiths After Update(training...) <<\n", self.hidden_weights)
 
 
 
@@ -108,14 +106,15 @@ class neuralNetwork:
         final_inputs = np.dot(hidden_outputs, self.final_weights)
         final_outputs = self.activation_function(final_inputs)
 
-        #if self.debugMode:
-        #    print(">> final outputs <<\n", final_outputs)
+        if self.debugMode:
+            print(">> final outputs <<\n", final_outputs)
 
         return final_outputs
 
 
 
-
+"""
+if __name__ == '__main__':
 training_data = [1.0, 0.5, -1.5]
 inputNodes = len(training_data)
 
@@ -129,3 +128,4 @@ learningRate = 0.1
 nn = neuralNetwork(inputNodes, hiddenNodes, outputNodes, learningRate, True)
 nn.train(training_data, training_label)
 nn.query(training_data)
+"""
