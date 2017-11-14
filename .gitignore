@@ -7,3 +7,5 @@ __pycache__/functions.cpython-36.pyc
 .idea/modules.xml
 /dataset/mnist_test.csv
 /dataset/mnist_train.csv
+*.pyc
+*.pyc

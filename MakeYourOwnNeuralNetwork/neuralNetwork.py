@@ -97,11 +97,11 @@ class neuralNetwork:
 
 
     # 신경망에 질의
-    def query(self, input_list, showResult=False):
+    def query(self, input_list, showResult=True):
         return self.forward(input_list, showResult)
 
 
-    def forward(self, input_list, showResult=False):
+    def forward(self, input_list, showResult=True):
         # 입력 list를 행렬로 변환
         inputs = np.array(input_list, ndmin=2)
 

@@ -1,18 +1,19 @@
 import neuralNetwork as nn
 import numpy as np
 import scipy.misc as misc
+import scipy.ndimage as ndimage
 
 
 ################################################################################
 # 신경망 학습
 ################################################################################
-file = open("../dataset/mnist_train_100.csv", "r")
+file = open("../dataset/mnist_train.csv", "r")
 training_data_list = file.readlines()
 file.close()
 
 inputNodes = len(training_data_list[0].split(',')[1:])
 outputNodes = 10
-learningRate = 0.1
+learningRate = 0.05
 
 network = nn.neuralNetwork(inputNodes, outputNodes, learningRate)
 
@@ -31,11 +32,53 @@ for e in range(epochs):
 
         network.train(inputs, labels)
 
+        # 회전시킨 이미지 학습
+        inputs_plusx_img = ndimage.interpolation.rotate(inputs.reshape(28, 28), 10, cval=0.01, order=1, reshape=False)
+        network.train(inputs_plusx_img.reshape(784), labels)
+
+        inputs_minusx_img = ndimage.interpolation.rotate(inputs.reshape(28, 28), -10, cval=0.01, order=1, reshape=False)
+        network.train(inputs_minusx_img.reshape(784), labels)
+
 
 
 ################################################################################
 # 신경망 테스트(성능 평가)
 ################################################################################
+img_array = misc.imread("../dataset/2.png", flatten=True)
+img_data = 255.0 - img_array.reshape(784)
+print("Correct Label is 2")
+network.forward(network.normalizeInputs(img_data, 255.0))
+
+img_array = misc.imread("../dataset/3.png", flatten=True)
+img_data = 255.0 - img_array.reshape(784)
+print("Correct Label is 3")
+network.forward(network.normalizeInputs(img_data, 255.0))
+
+img_array = misc.imread("../dataset/3(2).png", flatten=True)
+img_data = 255.0 - img_array.reshape(784)
+print("Correct Label is 3")
+network.forward(network.normalizeInputs(img_data, 255.0))
+
+img_array = misc.imread("../dataset/4.png", flatten=True)
+img_data = 255.0 - img_array.reshape(784)
+print("Correct Label is 4")
+network.forward(network.normalizeInputs(img_data, 255.0))
+
+img_array = misc.imread("../dataset/5(2).png", flatten=True)
+img_data = 255.0 - img_array.reshape(784)
+print("Correct Label is 5")
+network.forward(network.normalizeInputs(img_data, 255.0))
+
+img_array = misc.imread("../dataset/6.png", flatten=True)
+img_data = 255.0 - img_array.reshape(784)
+print("Correct Label is 6")
+network.forward(network.normalizeInputs(img_data, 255.0))
+
+img_array = misc.imread("../dataset/6(2).png", flatten=True)
+img_data = 255.0 - img_array.reshape(784)
+print("Correct Label is 6")
+network.forward(network.normalizeInputs(img_data, 255.0))
+
 
 file = open("../dataset/mnist_test.csv", "r")
 test_data_list = file.readlines()
@@ -45,17 +88,13 @@ scorecard = []
 
 for record in test_data_list:
     all_values = record.split(',')
+    outputs = network.forward(network.normalizeInputs(all_values[1:], 255.0), False)
 
     correct_label = int(all_values[0])
     print(correct_label, "Correct Label")
 
-    inputs = network.normalizeInputs(all_values[1:], 255.0)
-    outputs = network.forward(inputs)
-
     label = np.argmax(outputs)
-    print("result = %d[%f]\n" % (label, outputs[0][label]))
-
-    if (label == correct_label):
+    if label == correct_label:
         scorecard.append(1)
     else:
         scorecard.append(0)
