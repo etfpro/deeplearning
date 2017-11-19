@@ -7,7 +7,7 @@ import scipy.ndimage as ndimage
 ################################################################################
 # 신경망 학습
 ################################################################################
-file = open("../dataset/mnist_train.csv", "r")
+file = open("../dataset/mnist_train_100.csv", "r")
 training_data_list = file.readlines()
 file.close()
 
@@ -80,7 +80,7 @@ print("Correct Label is 6")
 network.forward(network.normalizeInputs(img_data, 255.0))
 
 
-file = open("../dataset/mnist_test.csv", "r")
+file = open("../dataset/mnist_test_10.csv", "r")
 test_data_list = file.readlines()
 file.close()
 
