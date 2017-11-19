@@ -10,7 +10,7 @@ class neuralNetwork:
         self.inodes = inputnodes
 
         # 은닉 노드 수
-        self.hnodes = int(inputnodes / 5)
+        self.hnodes = max(inputnodes, inputnodes // 5)
 
         # 출력 노드 수
         self.fnodes = outputnodes
@@ -47,6 +47,9 @@ class neuralNetwork:
         # 학습데이터와 레이블(정답)을 행렬로 변환
         inputs = np.array(training_data, ndmin=2)
         labels = np.array(training_label, ndmin=2)
+
+        if self.debugMode:
+            print(">> training_data <<\n", inputs)
 
         ########################################################################
         # forward propagation
@@ -123,9 +126,10 @@ class neuralNetwork:
         return final_outputs
 
 
-    # 입력값 정규화
+    # 입력값 정규화(0.01 ~ 1.00)
     def normalizeInputs(self, inputs, maxValue):
-        return (np.asfarray(inputs) / maxValue * 0.99) + 0.01
+        return (np.asfarray(inputs) // maxValue * 0.99) + 0.01
+
 
 
 """
