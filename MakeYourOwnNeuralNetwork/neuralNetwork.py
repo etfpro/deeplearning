@@ -25,7 +25,7 @@ class neuralNetwork:
         self.final_weights = np.random.normal(0.0, self.hnodes ** -0.5, (self.hnodes, self.fnodes))
 
         # 활성화 함수
-        self.activation_function = lambda x: 1.0 / (1.0 + np.exp(-x))
+        self.activation_function = self.sigmoid
 
         # 디버그모드
         self.debugMode = debugMode
@@ -129,6 +129,28 @@ class neuralNetwork:
     # 입력값 정규화(0.01 ~ 1.00)
     def normalizeInputs(self, inputs, maxValue):
         return (np.asfarray(inputs) // maxValue * 0.99) + 0.01
+
+
+
+
+    ############################################################################
+    # 활성화 함수들 정의
+    ############################################################################
+
+    # 시그모이드 함수
+    def sigmoid(self, x):
+        return 1.0 / (1.0 + np.exp(-x))
+
+
+    # Softmax 함수
+    def softmax(self, x):
+        exp_x = np.exp(x - np.max(x))
+        return exp_x / np.sum(exp_x)
+
+
+    # ReLU 함수
+    def relu(self, x):
+        return np.maximum(x, 0)
 
 
 

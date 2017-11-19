@@ -9,3 +9,7 @@ __pycache__/functions.cpython-36.pyc
 /dataset/mnist_train.csv
 *.pyc
 *.pyc
+*.pyc
+.DS_Store
+MakeYourOwnNeuralNetwork/__pycache__/neuralNetwork.cpython-36.pyc
+MakeYourOwnNeuralNetwork/__pycache__/neuralNetwork.cpython-36.pyc
