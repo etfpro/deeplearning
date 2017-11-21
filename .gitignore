@@ -13,3 +13,5 @@ __pycache__/functions.cpython-36.pyc
 .DS_Store
 MakeYourOwnNeuralNetwork/__pycache__/neuralNetwork.cpython-36.pyc
 MakeYourOwnNeuralNetwork/__pycache__/neuralNetwork.cpython-36.pyc
+*.pkl
+*.gz
