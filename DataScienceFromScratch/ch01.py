@@ -1,8 +1,6 @@
 # ch01.py
 from __future__ import division
-
-a = 1 +
-2
+from collections import Counter
 
 users = [
     {"id": 0, "name": "Hero"},
@@ -48,7 +46,7 @@ sorted_friends = sorted(num_friends_by_id,
 # page 6
 ################################################################################
 
-# 지정한 사용자의 친구의 친구의 id 리스트를 구한다
+# 지정한 사용자의 친구의 친구의 id 리스트를 구한다(중복 포함)
 def friends_of_friend_ids_bad(user):
     return [foaf["id"]
             for friend in user["friends"]
@@ -69,12 +67,32 @@ for user in users:
 def not_the_same(user1, user2):
     return user1["id"] != user2["id"]
 
+
 # 지정한 사용자(user)의 친구 중에 other_user가 없는지 검사
 def not_friends(user, other_user):
     return all(not_the_same(other_user, friend)
                for friend in user["friends"])
 
-if not_friends(users[0], users[5]):
-    print("친구아님!!")
-else:
-    print("친구맞음!!")
+
+# 지정한 사용자의 친구의 친구 중 이미 아는 사람을 제외한 사람들의 id 수를 구한다
+def friends_of_friend_ids(user):
+    return Counter(foaf["id"]
+                   for friend in user["friends"]
+                   for foaf in friend["friends"]
+                   if not_the_same(user, foaf)
+                   and not_friends(user, foaf))
+
+
+
+interests = [
+    (0, "Hadoop"), (0, "Big Data"), (0, "HBase"), (0, "Java"), (0, "Spark"), (0, "Storm"), (0, "Cassandra"),
+    (1, "NoSQL"), (1, "MongoDB"), (1, "Cassandra"), (1, "HBase"), (1, "Postgres"),
+    (2, "Python"), (2, "scikit-learn"), (2, "scipy"), (2, "numpy"), (2, "statsmodels"), (2, "pandas"),
+    (3, "R"), (3, "Python"), (3, "statistics"), (3, "regression"), (3, "probability"),
+    (4, "machine learning"), (4, "regression"), (4, "decision trees"), (4, "libsvm"),
+    (5, "Python"), (5, "R"), (5, "Java"), (5, "C++"), (5, "Haskell"), (5, "programming languages"),
+    (6, "statistics"), (6, "probability"), (6, "mathematics"), (6, "theory"),
+    (7, "machine learning"), (7, "scikit-learn"), (7, "Mahout"), (7, "neural networks"),
+    (8, "neural networks"), (8, "deep learning"), (8, "Big Data"), (8, "artificial intelligence"),
+    (9, "Hadoop"), (9, "Java"), (9, "MapReduce"), (9, "Big Data")
+]
