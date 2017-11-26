@@ -20,7 +20,9 @@ class simpleNet:
         y = func.softmax(z)
         return func.cross_entropy_error(y, t)
 
-    #
+
+
+
 net = simpleNet()
 print(">> Initial W <<\n", net.W)
 
@@ -34,3 +36,5 @@ loss = net.loss(x, t)
 print(">> loss <<\n", loss)
 
 
+dW = func.numerical_gradient(lambda w: net.loss(x, t), net.W)
+print(">> delta W <<\n", dW)

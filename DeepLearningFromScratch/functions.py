@@ -68,11 +68,13 @@ class Sigmoid:
 
 ################################################################################
 #
-# Activation Functions (활성화 함수들)
+# Loss/Cost Functions (손실/비용 함수들)
 #
 ################################################################################
 
 # 평균제곱오차(MSE) 함수
+#  y: 신경망 출력
+#  t: 정답레이블
 def mean_squared_error(y, t):
     return 0.5 * np.sum((y - t)**2)
 
@@ -92,7 +94,7 @@ def cross_entropy_error(y, t):
     if t.size == y.size: # one-hot-encoding이 아닌 경우, 정답레이블의 원소 수는 [출력데이터의 수 X 분류 수]
         t = t.argmax(axis=1)
 
-    batch_size = y.shape[0] # 훈련데이터의 개수
+    batch_size = y.shape[0] # 훈련데이터의 개수(미니 배치 크기
 
     # np.arange(batch_size): [0, 1, ..., 훈련데이터의 개수 - 1]의 numpy 배열(1차원) 생성
     # ==> y[[0, 1, ..., batch_size - 1], t]: 출력 데이터에서 정답 부분만 추출하여 배열(1차원) 생성
