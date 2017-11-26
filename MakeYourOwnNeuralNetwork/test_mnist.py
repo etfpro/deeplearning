@@ -13,7 +13,7 @@ file.close()
 
 inputNodes = len(training_data_list[0].split(',')[1:])
 outputNodes = 10
-learningRate = 0.05
+learningRate = 0.3
 
 network = nn.neuralNetwork(inputNodes, outputNodes, learningRate)
 
@@ -33,17 +33,19 @@ for e in range(epochs):
         network.train(inputs, labels)
 
         # 회전시킨 이미지 학습
-        inputs_plusx_img = ndimage.interpolation.rotate(inputs.reshape(28, 28), 10, cval=0.01, order=1, reshape=False)
-        network.train(inputs_plusx_img.reshape(784), labels)
+        #inputs_plusx_img = ndimage.interpolation.rotate(inputs.reshape(28, 28), 10, cval=0.01, order=1, reshape=False)
+        #network.train(inputs_plusx_img.reshape(784), labels)
 
-        inputs_minusx_img = ndimage.interpolation.rotate(inputs.reshape(28, 28), -10, cval=0.01, order=1, reshape=False)
-        network.train(inputs_minusx_img.reshape(784), labels)
+        #inputs_minusx_img = ndimage.interpolation.rotate(inputs.reshape(28, 28), -10, cval=0.01, order=1, reshape=False)
+        #network.train(inputs_minusx_img.reshape(784), labels)
 
 
 
 ################################################################################
 # 신경망 테스트(성능 평가)
 ################################################################################
+
+"""
 img_array = misc.imread("../dataset/2.png", flatten=True)
 img_data = 255.0 - img_array.reshape(784)
 print("Correct Label is 2")
@@ -78,7 +80,7 @@ img_array = misc.imread("../dataset/6(2).png", flatten=True)
 img_data = 255.0 - img_array.reshape(784)
 print("Correct Label is 6")
 network.forward(network.normalizeInputs(img_data, 255.0))
-
+"""
 
 file = open("../dataset/mnist_test_10.csv", "r")
 test_data_list = file.readlines()
@@ -91,7 +93,6 @@ for record in test_data_list:
     outputs = network.forward(network.normalizeInputs(all_values[1:], 255.0), False)
 
     correct_label = int(all_values[0])
-    print(correct_label, "Correct Label")
 
     label = np.argmax(outputs)
     if label == correct_label:
@@ -103,13 +104,3 @@ scorecard_array = np.asarray(scorecard)
 print("Scorecard =", scorecard)
 print("Performance = ", 100.0 * scorecard_array.sum() / scorecard_array.size, "%")
 
-
-
-"""
-import matplotlib.pyplot as plt
-image_array = np.asfarray(all_values[1:]).reshape((28, 28))
-plt.imshow(image_array, cmap='Greys', interpolation='None')
-plt.xticks([]) # x축 눈금
-plt.yticks([]) # y축 눈금
-plt.show()
-"""

@@ -8,7 +8,7 @@ import gzip
 import pickle
 import os
 import numpy as np
-import functions as f
+import functions as func
 
 
 url_base = 'http://yann.lecun.com/exdb/mnist/'
@@ -166,15 +166,15 @@ def predict(network, x):
 
     # 1 레이어
     a1 = np.dot(x, W1) + b1
-    z1 = f.sigmoid(a1)
+    z1 = func.sigmoid(a1)
 
     # 2 레이어
     a2 = np.dot(z1, W2) + b2
-    z2 = f.sigmoid(a2)
+    z2 = func.sigmoid(a2)
 
     # 3 레이어(출력)
     a3 = np.dot(z2, W3) + b3
-    y = f.softmax(a3)
+    y = func.softmax(a3)
 
     return y
 

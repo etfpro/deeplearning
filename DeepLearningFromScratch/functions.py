@@ -66,33 +66,36 @@ class Sigmoid:
 
 
 
-
-
-
-
-
 ################################################################################
 #
 # Activation Functions (활성화 함수들)
 #
 ################################################################################
 
-# 평균제곱오차 함수
+# 평균제곱오차(MSE) 함수
 def mean_squared_error(y, t):
     return 0.5 * np.sum((y - t)**2)
 
 
-# 교차엔트로피오차 함수
+# 교차엔트로피오차(CEE) 함수
+#  y: 신경망 출력
+#  t: 정답레이블
 def cross_entropy_error(y, t):
+
+    # 신경망의 출력이 1차원(출력이 1개)인 경우에도 처리 가능하도록 행열로 변환
     if y.ndim == 1:
         t = t.reshape(1, t.size)
         y = y.reshape(1, y.size)
 
-    # 훈련 데이터가 원-핫 벡터라면 정답 레이블의 인덱스로 반환
-    if t.size == y.size:
+    # 정답레이블이 one-hot-encoding 벡터인 경우,
+    # 정답레이블에서 최대 인덱스를 구해서 실제 레이블 값 형식의 배열(1차원)으로 변환
+    if t.size == y.size: # one-hot-encoding이 아닌 경우, 정답레이블의 원소 수는 [출력데이터의 수 X 분류 수]
         t = t.argmax(axis=1)
 
-    batch_size = y.shape[0]
+    batch_size = y.shape[0] # 훈련데이터의 개수
+
+    # np.arange(batch_size): [0, 1, ..., 훈련데이터의 개수 - 1]의 numpy 배열(1차원) 생성
+    # ==> y[[0, 1, ..., batch_size - 1], t]: 출력 데이터에서 정답 부분만 추출하여 배열(1차원) 생성
     return -np.sum(np.log(y[np.arange(batch_size), t])) / batch_size
 
 
@@ -103,50 +106,51 @@ def cross_entropy_error(y, t):
 #
 ################################################################################
 
+
+# 수치미분
 def numerical_diff(f, x):
     h = 1e-4
-    return (f(x + h) - f(x - h)) / (2 * h)
+    return (f(x + h) - f(x - h)) / (2 * h) # 중앙차분
+
 
 
 # 기울기 계산 (미분)
 def numerical_gradient(f, x):
     h = 1e-4  # 0.0001
-    grad = np.zeros_like(x)
+    grad = np.zeros_like(x) # x의 형상가 같은 배열 생성
 
+    # x의 각 원소에 대한 편미분
     it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
     while not it.finished:
         idx = it.multi_index
-        tmp_val = x[idx]
-        x[idx] = float(tmp_val) + h
+        x_org = x[idx]
+
+        # f(x+h) 계산
+        x[idx] = x_org + h
         fxh1 = f(x)  # f(x+h)
 
-        x[idx] = tmp_val - h
-        fxh2 = f(x)  # f(x-h)
+        # f(x-h) 계산
+        x[idx] = x_org - h
+        fxh2 = f(x)
+
+        # 미분
         grad[idx] = (fxh1 - fxh2) / (2 * h)
 
-        x[idx] = tmp_val  # 값 복원
+        x[idx] = x_org  # 값 복원
         it.iternext()
 
     return grad
 
 
 # 경사하강 기울기 조절
-def gradient_descent(f, init_w, lr=0.01, step_num=100):
-    w = init_w
-    w_history = []
+def gradient_descent(f, w, lr=0.01, epoch=100):
+    w_history = [] # 기울기 변화 과정을 담은 배열
 
-    for i in range(step_num):
+    for i in range(epoch):
         w_history.append(w.copy())
         w -= lr * numerical_gradient(f, w)
 
     return w, np.array(w_history)
-
-
-
-
-
-
-
 
 
 
