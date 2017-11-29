@@ -10,15 +10,18 @@ class TwoLayerNet:
         # 신경망의 매개변수와 편차를 보관하는 dictionary
         self.params = {}
 
-        # hidden layer 가중치, 편차 초기화
+        # hidden layer 가중치 초기화 (표준정규분포 N(0, 1)을 따르는 난수)
         self.params['W1'] = weight_init_std * np.random.randn(input_size, hidden_size)
+        #self.params['W1'] = np.random.normal(0.0, input_size ** -0.5, (input_size, hidden_size))
         self.params['b1'] = np.zeros(hidden_size)
 
-        # output layer 가중치, 편차 초기화
+        # output layer 가중치 초기화 (표준정규분포 N(0, 1)을 따르는 난수)
         self.params['W2'] = weight_init_std * np.random.randn(hidden_size, output_size)
+        #self.params['W2'] = np.random.normal(0.0, hidden_size ** -0.5, (hidden_size, output_size))
         self.params['b2'] = np.zeros(output_size)
 
 
+    # 예측
     def predict(self, x):
         W1, W2 = self.params['W1'], self.params['W2']
         b1, b2 = self.params['b1'], self.params['b2']
@@ -31,21 +34,25 @@ class TwoLayerNet:
 
         return y
 
+    def forward(self, x):
+        return self.predict(x)
 
+
+    # 손실함수(CEE)
     def loss(self, x, t):
         y = self.predict(x)
         return func.cross_entropy_error(y, t)
 
 
-    def accuracy(self, x, t):
-        return np.sum(np.argmax(self.predict(x), axis=1) == np.argmax(t, axis=1)) / float(x.shape[0])
-
-    # training
+    # 손실함수의 기울기 계산: 손실함수를 가중치에 대해서 미분(오차역전파 X)
+    # x: 입력 데이터
+    # t: 정답 레이블
     def numerical_gradient(self, x, t):
         loss_W = lambda W: self.loss(x, t)
 
-        # 각 layer의 기울기(미분)를 보관
         grads = {}
+
+        # 모든 레이어의 가중치를 마지막 출력층의 손실함수를 미분한 값으로 갱신
         grads['W1'] = func.numerical_gradient(loss_W, self.params['W1'])
         grads['b1'] = func.numerical_gradient(loss_W, self.params['b1'])
         grads['W2'] = func.numerical_gradient(loss_W, self.params['W2'])
@@ -54,16 +61,21 @@ class TwoLayerNet:
         return grads
 
 
+    def accuracy(self, x, t):
+        return np.sum(np.argmax(self.predict(x), axis=1) == np.argmax(t, axis=1)) / float(x.shape[0])
 
 
-net = TwoLayerNet(input_size=784, hidden_size=100, output_size=10)
 
-x = np.random.rand(1, 784)
-t = np.random.rand(1, 10)
+net = TwoLayerNet(input_size=784, hidden_size=111, output_size=10)
 
-grads = net.numerical_gradient(x, t)
+x = np.random.rand(100, 784) # 더미 입력 데이터 100개
+t = np.random.rand(100, 10)  # 더미 정답 레이블 100개
 
+y = net.numerical_gradient(x, t)
+
+"""
 print(grads['W1'].shape)
 print(grads['b1'].shape)
 print(grads['W2'].shape)
 print(grads['b2'].shape)
+"""

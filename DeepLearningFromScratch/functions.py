@@ -91,7 +91,7 @@ def cross_entropy_error(y, t):
 
     # 정답레이블이 one-hot-encoding 벡터인 경우,
     # 정답레이블에서 최대 인덱스를 구해서 실제 레이블 값 형식의 배열(1차원)으로 변환
-    if t.size == y.size: # one-hot-encoding이 아닌 경우, 정답레이블의 원소 수는 [출력데이터의 수 X 분류 수]
+    if t.size == y.size:
         t = t.argmax(axis=1)
 
     batch_size = y.shape[0] # 훈련데이터의 개수(미니 배치 크기
@@ -116,29 +116,30 @@ def numerical_diff(f, x):
 
 
 
-# 기울기 계산 (미분)
-def numerical_gradient(f, x):
+# 손실함수를 가중치로 미분하여 기울기 계산
+# 가중치의 개수 X 2 번 손실함수를 계산하기 때문에 매우 비효율적인 방법
+def numerical_gradient(lossFunc, w):
     h = 1e-4  # 0.0001
-    grad = np.zeros_like(x) # x의 형상가 같은 배열 생성
+    grad = np.zeros_like(w) # w의 형상과 같은 배열 생성
 
-    # x의 각 원소에 대한 편미분
-    it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
+    # w의 각 원소에 대한 편미분
+    it = np.nditer(w, flags=['multi_index'], op_flags=['readwrite'])
     while not it.finished:
         idx = it.multi_index
-        x_org = x[idx]
+        w_org = w[idx]
 
-        # f(x+h) 계산
-        x[idx] = x_org + h
-        fxh1 = f(x)  # f(x+h)
+        # f(w+h) 계산
+        w[idx] = w_org + h
+        fxh1 = lossFunc(w)  # f(w+h)
 
-        # f(x-h) 계산
-        x[idx] = x_org - h
-        fxh2 = f(x)
+        # f(w-h) 계산
+        w[idx] = w_org - h
+        fxh2 = lossFunc(w)
 
         # 미분
         grad[idx] = (fxh1 - fxh2) / (2 * h)
 
-        x[idx] = x_org  # 값 복원
+        w[idx] = w_org  # 값 복원
         it.iternext()
 
     return grad
