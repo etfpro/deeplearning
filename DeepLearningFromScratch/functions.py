@@ -28,44 +28,6 @@ def softmax(x):
     return exp_x / np.sum(exp_x)
 
 
-
-class Relu:
-    def __init__(self):
-        self.mask = None
-
-
-    def forward(self, x):
-        self.mask = (x <= 0)
-        out = x.copy()
-        out[self.mask] = 0
-        return out
-
-    def forward2(self, x):
-        self.mask = (x <= 0)
-        return np.max(0, x)
-
-
-    def backward(self, dout):
-        dout[self.mask] = 0
-        return dout;
-
-
-
-class Sigmoid:
-    def __init__(self):
-        self.out = None;
-
-
-    def forward(self, x):
-        self.out = 1.0 / (1.0 + np.exp(-p))
-        return self.out
-
-
-    def backward(self, dout):
-        return dout * (1.0 - self.out) * self.out
-
-
-
 ################################################################################
 #
 # Loss/Cost Functions (손실/비용 함수들)
@@ -163,15 +125,6 @@ def gradient_descent(f, w, lr=0.01, epoch=100):
 #
 ################################################################################
 
-def function_1(x):
-    return 0.01 * x**2 + 0.1 * x
-
-def function_2(x):
-    return np.sum(x**2)
-
-
 
 if __name__ == '__main__':
-    x = np.array([[1.0, -0.5], [-2.0, 3.0]])
-    print(x)
-
+    pass

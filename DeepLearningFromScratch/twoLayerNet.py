@@ -44,7 +44,8 @@ class TwoLayerNet:
         return func.cross_entropy_error(y, t)
 
 
-    # 손실함수의 기울기 계산: 손실함수를 가중치에 대해서 수치 미분(오차역전파 X, 계산 시간이 오래 걸린다)
+    # 손실함수의 기울기 계산: 손실함수를 가중치에 대해서 수치 미분
+    # 계산 시간이 오래 걸린다
     # x: 입력 데이터
     # t: 정답 레이블
     def numerical_gradient(self, x, t):
