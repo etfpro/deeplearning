@@ -44,7 +44,7 @@ class TwoLayerNet:
         return func.cross_entropy_error(y, t)
 
 
-    # 손실함수의 기울기 계산: 손실함수를 가중치에 대해서 미분(오차역전파 X)
+    # 손실함수의 기울기 계산: 손실함수를 가중치에 대해서 수치 미분(오차역전파 X, 계산 시간이 오래 걸린다)
     # x: 입력 데이터
     # t: 정답 레이블
     def numerical_gradient(self, x, t):
@@ -61,21 +61,33 @@ class TwoLayerNet:
         return grads
 
 
+    # 학습
+    def train(self, x, t, learning_rate = 0.01):
+        grad = self.numerical_gradient(x, t)
+        # grad = networ.gradient(x_batch, t_batch)
+
+        # 매개변수 갱신
+        for key in ('W1', 'b1', 'W2', 'b2'):
+            self.params[key] -= learning_rate * grad[key]
+
+
+    # 정확도 측정
     def accuracy(self, x, t):
         return np.sum(np.argmax(self.predict(x), axis=1) == np.argmax(t, axis=1)) / float(x.shape[0])
 
 
 
-net = TwoLayerNet(input_size=784, hidden_size=111, output_size=10)
+if __name__ == '__main__':
+    net = TwoLayerNet(input_size=784, hidden_size=111, output_size=10)
 
-x = np.random.rand(100, 784) # 더미 입력 데이터 100개
-t = np.random.rand(100, 10)  # 더미 정답 레이블 100개
+    x = np.random.rand(100, 784) # 더미 입력 데이터 100개
+    t = np.random.rand(100, 10)  # 더미 정답 레이블 100개
 
-y = net.numerical_gradient(x, t)
+    y = net.numerical_gradient(x, t)
 
-"""
-print(grads['W1'].shape)
-print(grads['b1'].shape)
-print(grads['W2'].shape)
-print(grads['b2'].shape)
-"""
+    """
+    print(grads['W1'].shape)
+    print(grads['b1'].shape)
+    print(grads['W2'].shape)
+    print(grads['b2'].shape)
+    """

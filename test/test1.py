@@ -2,8 +2,13 @@
 
 import numpy as np
 
+index_set = []
 
-array = np.array([1, 2, 3, 4, 5])
-print(array[[True, False, True, False, True]])
-print([a for a in array])
+for i in range(0, 100):
+    batch_mask = np.random.choice(10000, 100)
+    index_set.extend(batch_mask)
 
+index_set = set(index_set)
+
+print(sorted(index_set))
+print(len(index_set))
