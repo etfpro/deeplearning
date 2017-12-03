@@ -28,6 +28,7 @@ def softmax(x):
     return exp_x / np.sum(exp_x)
 
 
+
 ################################################################################
 #
 # Loss/Cost Functions (손실/비용 함수들)
@@ -64,12 +65,12 @@ def cross_entropy_error(y, t):
 
 
 
+
 ################################################################################
 #
 # 미분 관련 함수
 #
 ################################################################################
-
 
 # 수치미분
 def numerical_diff(f, x):
@@ -116,6 +117,7 @@ def gradient_descent(f, w, lr=0.01, epoch=100):
         w -= lr * numerical_gradient(f, w)
 
     return w, np.array(w_history)
+
 
 
 

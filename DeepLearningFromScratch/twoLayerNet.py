@@ -2,12 +2,16 @@
 
 import numpy as np
 import functions as func
+from Layers import *
+from collections import OrderedDict
 
 
 class TwoLayerNet:
     def __init__(self, input_size, hidden_size, output_size, weight_init_std=0.01):
 
-        # 신경망의 매개변수와 편차를 보관하는 dictionary
+        ########################################################################
+        # 신경망의 매개변수(가중치, 편차)초기화
+        ########################################################################
         self.params = {}
 
         # hidden layer 가중치 초기화 (표준정규분포 N(0, 1)을 따르는 난수)
@@ -21,27 +25,68 @@ class TwoLayerNet:
         self.params['b2'] = np.zeros(output_size)
 
 
-    # 예측
+        ########################################################################
+        # 각 계층 생성
+        ########################################################################
+        self.layers = OrderedDict()
+
+        # hiden layer
+        self.layers['Affine1'] = Affine(self.params['W1'], self.params['b1'])
+        self.layers['Relu1'] = Relu()
+
+        # output layer
+        self.layers['Affine2'] = Affine(self.params['W2'], self.params['b2'])
+        self.lastLayer = SoftmaxWithLoss() # Softmax와 오차함수 계층은 실제 추론에서는 사용하지 않기 때문에 별도의 변수에 저장
+
+
+
+    # 추론(예측)
+    # hidden layer ~ output layer의 Affine 계층까지
     def predict(self, x):
-        W1, W2 = self.params['W1'], self.params['W2']
-        b1, b2 = self.params['b1'], self.params['b2']
+        for layer in self.layers.values():
+            x = layer.forward(x)
 
-        # hidden layer 출력값
-        z1 = func.sigmoid(np.dot(x, W1) + b1)
-
-        # output layer 출력값
-        y = func.softmax(np.dot(z1, W2) + b2)
-
-        return y
-
-    def forward(self, x):
-        return self.predict(x)
+        return x
 
 
-    # 손실함수(CEE)
+
+    # 손실함수(CEE): 순전파를 통한 손실을 구한다
+    # x: 입력 데이터
+    # t: 정답 레이블
     def loss(self, x, t):
-        y = self.predict(x)
-        return func.cross_entropy_error(y, t)
+        # hidden layer ~ output layer의 Affine 계층
+        a = self.predict(x)
+
+        # Softmax - Cross Entropy Error 계층
+        return func.lastLayer.forward(a, t)
+
+
+
+    # 손실함수의 기울기 계산(미분)
+    # x: 입력 데이터
+    # t: 정답 레이블
+    def gradient(self, x, t):
+        # 순전파를 통해 손실을 구한다.(CEE)
+        # 손실값은 SoftmaxWithLoss 계층 객체에 저장
+        self.loss(x, t)
+
+        # 미분값 계산
+
+        # Softmax - Cross Entropy Error 계층의 미분값 계산
+        dout = self.lastLayer.backward(1)
+
+        # output layer의 Affine 계층 ~ hidden layer 까지 미분값 계산
+        layers = list(self.layers.values()).reverse()
+        for layer in layers:
+            dout = layer.backward(dout)
+
+
+        # 결과저장
+
+
+
+
+
 
 
     # 손실함수의 기울기 계산: 손실함수를 가중치에 대해서 수치 미분
@@ -84,7 +129,6 @@ if __name__ == '__main__':
     x = np.random.rand(100, 784) # 더미 입력 데이터 100개
     t = np.random.rand(100, 10)  # 더미 정답 레이블 100개
 
-    y = net.numerical_gradient(x, t)
 
     """
     print(grads['W1'].shape)
