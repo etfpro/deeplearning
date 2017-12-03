@@ -80,13 +80,14 @@ class TwoLayerNet:
         for layer in layers:
             dout = layer.backward(dout)
 
+        # 미분 결과 저장
+        grads = {}
+        grads['W1'] = self.layers['Affine1'].dW
+        grads['b1'] = self.layers['Affine1'].db
+        grads['W2'] = self.layers['Affine2'].dW
+        grads['b2'] = self.layers['Affine2'].db
 
-        # 결과저장
-
-
-
-
-
+        return grads
 
 
     # 손실함수의 기울기 계산: 손실함수를 가중치에 대해서 수치 미분
@@ -95,9 +96,7 @@ class TwoLayerNet:
     # t: 정답 레이블
     def numerical_gradient(self, x, t):
         loss_W = lambda W: self.loss(x, t)
-
         grads = {}
-
         # 모든 레이어의 가중치를 마지막 출력층의 손실함수를 미분한 값으로 갱신
         grads['W1'] = func.numerical_gradient(loss_W, self.params['W1'])
         grads['b1'] = func.numerical_gradient(loss_W, self.params['b1'])
@@ -109,8 +108,7 @@ class TwoLayerNet:
 
     # 학습
     def train(self, x, t, learning_rate = 0.01):
-        grad = self.numerical_gradient(x, t)
-        # grad = networ.gradient(x_batch, t_batch)
+        grad = self.gradient(x, t)
 
         # 매개변수 갱신
         for key in ('W1', 'b1', 'W2', 'b2'):
