@@ -24,8 +24,15 @@ def relu(x):
     return np.maximum(0, x)
 
 def softmax(x):
-    exp_x = np.exp(x - np.max(x)) # 배열 원소 중 가장 큰 수를 빼서 overflow 방지
-    return exp_x / np.sum(exp_x)
+    # 훈련 데이터가 2개 이상인 경우
+    if x.ndim == 2:
+        x = x.T # 최대값이 훈련 데이터의 수 만큼의 배열로 출력 되기 때문에 shape을 맞추기 위해서 전치
+        x = x - np.max(x, axis=0) # 배열 원소 중 가장 큰 수를 빼서 overflow 방지
+        y = np.exp(x) / np.sum(np.exp(x), axis=0)
+        return y.T
+    else:
+        x = x - np.max(x)  # 배열 원소 중 가장 큰 수를 빼서 overflow 방지
+        return np.exp(x) / np.sum(np.exp(x))
 
 
 
@@ -81,42 +88,42 @@ def numerical_diff(f, x):
 
 # 손실함수를 가중치로 미분하여 기울기 계산
 # 가중치의 개수 X 2 번 손실함수를 계산하기 때문에 매우 비효율적인 방법
-def numerical_gradient(lossFunc, w):
+def numerical_gradient(lossFunc, x):
     h = 1e-4  # 0.0001
-    grad = np.zeros_like(w) # w의 형상과 같은 배열 생성
+    grad = np.zeros_like(x) # x의 형상과 같은 배열 생성
 
-    # w의 각 원소에 대한 편미분
-    it = np.nditer(w, flags=['multi_index'], op_flags=['readwrite'])
+    # x의 각 원소에 대한 편미분
+    it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
     while not it.finished:
         idx = it.multi_index
-        w_org = w[idx]
+        x_org = x[idx]
 
-        # f(w+h) 계산
-        w[idx] = w_org + h
-        fxh1 = lossFunc(w)  # f(w+h)
+        # f(x+h) 계산
+        x[idx] = x_org + h
+        fxh1 = lossFunc(x)  # f(x+h)
 
-        # f(w-h) 계산
-        w[idx] = w_org - h
-        fxh2 = lossFunc(w)
+        # f(x-h) 계산
+        x[idx] = x_org - h
+        fxh2 = lossFunc(x)
 
         # 미분
         grad[idx] = (fxh1 - fxh2) / (2 * h)
 
-        w[idx] = w_org  # 값 복원
+        x[idx] = x_org  # 값 복원
         it.iternext()
 
     return grad
 
 
 # 경사하강 기울기 조절
-def gradient_descent(f, w, lr=0.01, epoch=100):
+def gradient_descent(f, x, lr=0.01, epoch=100):
     w_history = [] # 기울기 변화 과정을 담은 배열
 
     for i in range(epoch):
-        w_history.append(w.copy())
-        w -= lr * numerical_gradient(f, w)
+        w_history.append(x.copy())
+        x -= lr * numerical_gradient(f, x)
 
-    return w, np.array(w_history)
+    return x, np.array(w_history)
 
 
 

@@ -13,13 +13,20 @@ class Affine:
         # 순전파 입력을 역전파(미분) 시 사용을 위해 저장
         self.x = None
 
+        # 가중치에 대한 미분값
+        self.dW = None
+
+        # 편차에 대한 미분값
+        self.db = None
+
         self.original_x_shape = None
 
 
     def forward(self, x):
         # 텐서 대응
         self.original_x_shape = x.shape
-        self.x = x.reshape(x.shape[0], -1) # 행: 데이터의 수, 열: 1개의 입력값을 1행으로 풀어놓은 상태
+        x = x.reshape(x.shape[0], -1) # 행: 데이터의 수, 열: 1개의 입력값을 1행으로 풀어놓은 상태
+        self.x = x
 
         out = np.dot(self.x, self.W) + self.b
         return out
@@ -67,7 +74,7 @@ class Sigmoid:
 
 
     def forwward(self, x):
-        self.out = 1 / (1 + np.exp(-x))
+        self.out = 1.0 / (1.0 + np.exp(-x))
         out = self.out
         return out
 
@@ -86,7 +93,7 @@ class SoftmaxWithLoss:
     def __init__(self):
         self.loss = None # 손실
         self.y = None # Softamx 출력
-        self.t = None # 정답 레이블(One-hot Encoding
+        self.t = None # 정답 레이블(One-hot Encoding)
 
     # x: 입력
     # t: 정답 레이블(마지막 계층이기 때문에 정답 레이블이 필요)
@@ -99,8 +106,15 @@ class SoftmaxWithLoss:
 
     def backward(self, dout = 1):
         batch_size = self.t.shape[0]
-        # 배치의 수로 나눠서 데이터 1개당 오차를 전파
-        dx = (self.y - self.t) / batch_size
+
+        # 정답 레이블이 one-hot encoding 형태인 경우
+        if self.t.size == self.y.size:
+            dx = (self.y - self.t) / batch_size # 배치의 수로 나눠서 데이터 1개당 오차를 전파
+        else:
+            # 정답 레이블이 레이블 형태인 경우
+            dx = self.y.copy()
+            dx[np.arange(batch_size), self.t] -= 1 # 정답 레이블에 해당하는 항목에서만 1(정답 확률)을 뺀다
+
         return dx
 
 

@@ -58,7 +58,7 @@ class TwoLayerNet:
         a = self.predict(x)
 
         # Softmax - Cross Entropy Error 계층
-        return func.lastLayer.forward(a, t)
+        return self.lastLayer.forward(a, t)
 
 
 
@@ -73,19 +73,18 @@ class TwoLayerNet:
         # 미분값 계산
 
         # Softmax - Cross Entropy Error 계층의 미분값 계산
-        dout = self.lastLayer.backward(1)
+        dout = self.lastLayer.backward(1.0)
 
         # output layer의 Affine 계층 ~ hidden layer 까지 미분값 계산
-        layers = list(self.layers.values()).reverse()
+        layers = list(self.layers.values())
+        layers.reverse()
         for layer in layers:
             dout = layer.backward(dout)
 
         # 미분 결과 저장
         grads = {}
-        grads['W1'] = self.layers['Affine1'].dW
-        grads['b1'] = self.layers['Affine1'].db
-        grads['W2'] = self.layers['Affine2'].dW
-        grads['b2'] = self.layers['Affine2'].db
+        grads['W1'], grads['b1'] = self.layers['Affine1'].dW, self.layers['Affine1'].db
+        grads['W2'], grads['b2'] = self.layers['Affine2'].dW, self.layers['Affine2'].db
 
         return grads
 
@@ -117,8 +116,14 @@ class TwoLayerNet:
 
     # 정확도 측정
     def accuracy(self, x, t):
-        return np.sum(np.argmax(self.predict(x), axis=1) == np.argmax(t, axis=1)) / float(x.shape[0])
+        # 출력값 중 가장 큰 값의 인덱스 추출
+        y = np.argmax(self.predict(x), axis=1)
 
+        # 정답 레이블이 one-hot-encoding 인 경우 정답 인덱스(값이 1) 추출
+        if t.ndim != 1:
+            t = np.argmax(t, axis=1)
+
+        return np.sum(y == t) / float(x.shape[0])
 
 
 if __name__ == '__main__':
