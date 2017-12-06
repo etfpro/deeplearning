@@ -18,5 +18,6 @@ grad_backprop = network.gradient(x_batch, t_batch)
 
 # 각 가중치의 절대 오차의 평균을 구한다.
 for key in grad_numerical.keys():
+    d = np.abs(grad_backprop[key] - grad_numerical[key])
     diff = np.average( np.abs(grad_backprop[key] - grad_numerical[key]) )
     print(key + ":" + str(diff))
