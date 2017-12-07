@@ -4,13 +4,11 @@ import numpy as np
 from mnist import load_mnist
 from twoLayerNet import TwoLayerNet
 import time
+from optimizer import *
+
 
 # 데이터 읽기
 (train_data, train_label), (test_data, test_label) = load_mnist(one_hot_label=True)
-
-# 신경망 생성
-network = TwoLayerNet(input_size=784, hidden_size=50, output_size=10)
-
 
 # 각 배치 학습별 손실값을 저장하는 리스트
 train_loss_list = []
@@ -26,10 +24,17 @@ test_acc_list = []
 iters_num = 20000 # SGD 반복회수
 train_size = train_data.shape[0] # 훈련데이터 개수
 batch_size = 100 # 미니배치 크기
-learning_rate = 0.1
 
 # 1 주기 당 SGD 반복 회수: 전체 훈련데이터를 1회 학습하기 위한 SGD 반복 회수
 iter_per_epoch = int(train_size / batch_size)
+
+# 신경망 생성
+network = TwoLayerNet(input_size=784, hidden_size=50, output_size=10)
+learningRate = 0.01
+#network.optimizer = SGD(learningRate)
+#network.optimizer = Momentum(learningRate)
+#network.optimizer = AdaGrad(learningRate)
+network.optimizer = RMSprop(learningRate)
 
 for i in range(iters_num):
 
@@ -39,7 +44,7 @@ for i in range(iters_num):
     t_batch = train_label[batch_mask]
 
     # 기울기 계산 및 가중치 갱신
-    network.train(x_batch, t_batch, learning_rate)
+    network.train(x_batch, t_batch)
 
     # 학습 경과 기록: 매 SGD 당 손실값 기록
     loss = network.loss(x_batch, t_batch)
@@ -55,5 +60,9 @@ for i in range(iters_num):
         test_acc = network.accuracy(test_data, test_label)
         test_acc_list.append(test_acc)
 
-        print("train acc, test acc | " + str(train_acc) + ", " + str(test_acc))
+        print("Train accuracy = %f%%, Test accuracy = %f%%" % (train_acc * 100.0, test_acc * 100.0))
+
+
+
+
 

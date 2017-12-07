@@ -4,10 +4,12 @@ import numpy as np
 import functions as func
 from Layers import *
 from collections import OrderedDict
+from optimizer import Momentum
 
 
 class TwoLayerNet:
-    def __init__(self, input_size, hidden_size, output_size, weight_init_std=0.01):
+    def __init__(self, input_size, hidden_size, output_size, weight_init_std=0.01, optimizer=Momentum()):
+
 
         ########################################################################
         # 신경망의 매개변수(가중치, 편차)초기화
@@ -37,6 +39,12 @@ class TwoLayerNet:
         # output layer
         self.layers['Affine2'] = Affine(self.params['W2'], self.params['b2'])
         self.lastLayer = SoftmaxWithLoss() # Softmax와 오차함수 계층은 실제 추론에서는 사용하지 않기 때문에 별도의 변수에 저장
+
+
+        ########################################################################
+        # 가중치 갱신 optimizer
+        ########################################################################
+        self.optimizer = optimizer
 
 
 
@@ -106,12 +114,11 @@ class TwoLayerNet:
 
 
     # 학습
-    def train(self, x, t, learning_rate = 0.01):
-        grad = self.gradient(x, t)
+    def train(self, x, t):
+        grads = self.gradient(x, t)
 
         # 매개변수 갱신
-        for key in ('W1', 'b1', 'W2', 'b2'):
-            self.params[key] -= learning_rate * grad[key]
+        self.optimizer.update(self.params, grads)
 
 
     # 정확도 측정
