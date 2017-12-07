@@ -40,6 +40,31 @@ class Momentum:
             params[key] -= self.v[key]
 
 
+class Nesterov:
+    """Nesterov's Accelerated Gradient (http://arxiv.org/abs/1212.0901)"""
+
+    # NAG는 모멘텀에서 한 단계 발전한 방법이다. (http://newsight.tistory.com/224)
+
+    def __init__(self, lr=0.01, momentum=0.9):
+        self.lr = lr
+        self.momentum = momentum
+        self.v = None
+
+    def update(self, params, grads):
+        if self.v is None:
+            self.v = {}
+            for key, val in params.items():
+                self.v[key] = np.zeros_like(val)
+
+        for key in params.keys():
+            self.v[key] *= self.momentum
+            self.v[key] -= self.lr * grads[key]
+            params[key] += self.momentum * self.momentum * self.v[key]
+            params[key] -= (1 + self.momentum) * self.lr * grads[key]
+
+
+
+
 # AdaGrad - Adaptive Gradients, 학습률 감소
 # 가중치를 update할 때 각각의 가중치마다 학습률을 다르게 설정해서 이동
 # 기본적인 아이디어는 '지금까지 많이 변화하지 않은 가중치들은 학습률을 크게 하고, 지금까지 많이 변화했던 가중치들은 학습률을 작게 하자’라는 것
@@ -72,7 +97,8 @@ class AdaGrad:
 # 실제로 무한히 계속 학습한다면 어느 순간 갱신량이 0이되어 전혀 갱힌되지 않은 문제가 있음
 # 따라서 과거의 모든 기울기를 균일하게 더해가는 것이 아니라, 먼 과거의 기울기는 서서히 잊고 새로운 기울기 정보를 크게 반영 - 지수이동평균
 # 즉, 과거 기울기의 반영 규모를 기하급수적으로 감소시킴
-class RMSprop:
+# 강화학습에서 많이 사용
+class RMSProp:
     def __init__(self, lr=0.01, decay_rate=0.99):
         self.lr = lr
         self.decay_rate = decay_rate
@@ -90,3 +116,58 @@ class RMSprop:
 
             self.h[key] += (1 - self.decay_rate) * grads[key] ** 2
             params[key] -= self.lr * grads[key] / (np.sqrt(self.h[key]) + 1e-7)
+
+
+
+# Mementum(관성) + RMSProp(학습률 감소) 기법 혼합
+# 이 방식에서는 Momentum 방식과 유사하게 지금까지 계산해온 기울기의 지수평균을 저장하며, RMSProp과 유사하게 기울기의 제곱값의 지수평균을 저장한다.
+
+class Adam:
+    def __init__(self, lr=0.001, beta1=0.9, beta2=0.999):
+        self.lr = lr
+        self.beta1 = beta1 # 1차 momentum용 계수
+        self.beta2 = beta2 # 2차 momentum용 계수
+        self.iter = 0
+        self.m = None
+        self.v = None
+
+    def update(self, params, grads):
+        if self.m is None:
+            self.m, self.v = {}, {}
+            for key, val in params.items():
+                self.m[key] = np.zeros_like(val)
+                self.v[key] = np.zeros_like(val)
+
+        self.iter += 1
+        lr_t = self.lr * np.sqrt(1.0 - self.beta2 ** self.iter) / (1.0 - self.beta1 ** self.iter)
+
+        for key in params.keys():
+            # self.m[key] = self.beta1*self.m[key] + (1-self.beta1)*grads[key]
+            # self.v[key] = self.beta2*self.v[key] + (1-self.beta2)*(grads[key]**2)
+            self.m[key] += (1 - self.beta1) * (grads[key] - self.m[key])
+            self.v[key] += (1 - self.beta2) * (grads[key] ** 2 - self.v[key])
+
+            params[key] -= lr_t * self.m[key] / (np.sqrt(self.v[key]) + 1e-7)
+
+            # unbias_m += (1 - self.beta1) * (grads[key] - self.m[key]) # correct bias
+            # unbisa_b += (1 - self.beta2) * (grads[key]*grads[key] - self.v[key]) # correct bias
+            # params[key] += self.lr * unbias_m / (np.sqrt(unbisa_b) + 1e-7)
+
+
+
+
+if __name__ == '__main__':
+
+    def f(x, y):
+        return x**2 / 20.0 + y**2
+
+    # 위의 f(x, y) 함수 미분
+    def df(x, y):
+        return x / 10.0, 2.0 * y
+
+
+    # f(x, y) 시작 위치
+    init_pos = (-7.0, 2.0)
+
+    # 가중치 매개변수
+    params = {}

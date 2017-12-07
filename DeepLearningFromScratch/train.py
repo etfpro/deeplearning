@@ -34,7 +34,9 @@ learningRate = 0.01
 #network.optimizer = SGD(learningRate)
 #network.optimizer = Momentum(learningRate)
 #network.optimizer = AdaGrad(learningRate)
-network.optimizer = RMSprop(learningRate)
+#network.optimizer = RMSprop(learningRate)
+network.optimizer = Adam(learningRate)
+
 
 for i in range(iters_num):
 
@@ -60,7 +62,7 @@ for i in range(iters_num):
         test_acc = network.accuracy(test_data, test_label)
         test_acc_list.append(test_acc)
 
-        print("Train accuracy = %f%%, Test accuracy = %f%%" % (train_acc * 100.0, test_acc * 100.0))
+        print("Train accuracy = %.2f%%, Test accuracy = %.2f%%" % (train_acc * 100.0, test_acc * 100.0))
 
 
 
