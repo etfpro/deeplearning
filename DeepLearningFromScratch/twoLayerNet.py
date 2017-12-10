@@ -2,13 +2,13 @@
 
 import numpy as np
 import functions as func
-from Layers import *
+from layers import *
 from collections import OrderedDict
 from optimizer import Momentum
 
 
 class TwoLayerNet:
-    def __init__(self, input_size, hidden_size, output_size, weight_init_std=0.01, optimizer=Momentum()):
+    def __init__(self, input_size, hidden_size, output_size, optimizer=Momentum()):
 
 
         ########################################################################
@@ -16,14 +16,16 @@ class TwoLayerNet:
         ########################################################################
         self.params = {}
 
-        # hidden layer 가중치 초기화 (표준정규분포 N(0, 1)을 따르는 난수)
-        self.params['W1'] = weight_init_std * np.random.randn(input_size, hidden_size)
-        #self.params['W1'] = np.random.normal(0.0, input_size ** -0.5, (input_size, hidden_size))
+        # hidden layer 가중치 초기화 - He 초기값
+        self.params['W1'] = np.random.randn(input_size, hidden_size) * np.sqrt(2.0 / input_size)
+        #self.params['W1'] = np.random.randn(input_size, hidden_size) * np.sqrt(1.0 / input_size)
+        #self.params['W1'] = np.random.randn(input_size, hidden_size) * 0.01
         self.params['b1'] = np.zeros(hidden_size)
 
-        # output layer 가중치 초기화 (표준정규분포 N(0, 1)을 따르는 난수)
-        self.params['W2'] = weight_init_std * np.random.randn(hidden_size, output_size)
-        #self.params['W2'] = np.random.normal(0.0, hidden_size ** -0.5, (hidden_size, output_size))
+        # output layer 가중치 초기화 - He 초기값
+        self.params['W2'] = np.random.randn(hidden_size, output_size) * np.sqrt(2.0 / hidden_size)
+        #self.params['W2'] = np.random.randn(hidden_size, output_size) * np.sqrt(1.0 / hidden_size)
+        #self.params['W2'] = np.random.randn(hidden_size, output_size) * 0.01
         self.params['b2'] = np.zeros(output_size)
 
 

@@ -1,13 +1,15 @@
 # coding: utf-8
+import sys, os
+
+sys.path.append(os.pardir)  # 부모 디렉터리의 파일을 가져올 수 있도록 설정
 import numpy as np
 from collections import OrderedDict
-from Layers import *
-
+from layers import *
+from functions import numerical_gradient
 
 
 class MultiLayerNet:
-    """완전 연결 다층 신경망(확장판)
-    가중치 감소, 드롭아웃, 배치 정규화 구현
+    """완전연결 다층 신경망
 
     Parameters
     ----------
@@ -19,54 +21,33 @@ class MultiLayerNet:
         'relu'나 'he'로 지정하면 'He 초깃값'으로 설정
         'sigmoid'나 'xavier'로 지정하면 'Xavier 초깃값'으로 설정
     weight_decay_lambda : 가중치 감소(L2 법칙)의 세기
-    use_dropout : 드롭아웃 사용 여부
-    dropout_ration : 드롭아웃 비율
-    use_batchNorm : 배치 정규화 사용 여부
     """
+
     def __init__(self, input_size, hidden_size_list, output_size,
-                 activation='relu', weight_init_std='relu', weight_decay_lambda=0,
-                 use_dropout=False, dropout_ration=0.5, use_batchnorm=False):
+                 activation='relu', weight_init_std='relu', weight_decay_lambda=0):
         self.input_size = input_size
         self.output_size = output_size
         self.hidden_size_list = hidden_size_list
         self.hidden_layer_num = len(hidden_size_list)
-        self.use_dropout = use_dropout
         self.weight_decay_lambda = weight_decay_lambda
-        self.use_batchnorm = use_batchnorm
-
-
-        # 신경망의 매개변수(가중치, 편차)초기화
         self.params = {}
+
+        # 가중치 초기화
         self.__init_weight(weight_init_std)
 
-
-        ########################################################################
-        # 각 계층 생성
-        ########################################################################
-        self.layers = OrderedDict()
-
+        # 계층 생성
         activation_layer = {'sigmoid': Sigmoid, 'relu': Relu}
-
-        # Hidden layer
+        self.layers = OrderedDict()
         for idx in range(1, self.hidden_layer_num + 1):
-            # Hidden layer의 Affine 계층
-            self.layers['Affine' + str(idx)] = Affine(self.params['W' + str(idx)], self.params['b' + str(idx)])
-            if self.use_batchnorm:
-                self.params['gamma' + str(idx)] = np.ones(hidden_size_list[idx - 1])
-                self.params['beta' + str(idx)] = np.zeros(hidden_size_list[idx - 1])
-                self.layers['BatchNorm' + str(idx)] = BatchNormalization(self.params['gamma' + str(idx)],
-                                                                         self.params['beta' + str(idx)])
-            # Hidden layer의 Activation 계층
+            self.layers['Affine' + str(idx)] = Affine(self.params['W' + str(idx)],
+                                                      self.params['b' + str(idx)])
             self.layers['Activation_function' + str(idx)] = activation_layer[activation]()
 
-            if self.use_dropout:
-                self.layers['Dropout' + str(idx)] = Dropout(dropout_ration)
-
-        # Output layer
         idx = self.hidden_layer_num + 1
-        self.layers['Affine' + str(idx)] = Affine(self.params['W' + str(idx)], self.params['b' + str(idx)])
-        self.last_layer = SoftmaxWithLoss()
+        self.layers['Affine' + str(idx)] = Affine(self.params['W' + str(idx)],
+                                                  self.params['b' + str(idx)])
 
+        self.last_layer = SoftmaxWithLoss()
 
     def __init_weight(self, weight_init_std):
         """가중치 초기화
@@ -81,31 +62,31 @@ class MultiLayerNet:
         for idx in range(1, len(all_size_list)):
             scale = weight_init_std
             if str(weight_init_std).lower() in ('relu', 'he'):
-                scale = np.sqrt(2.0 / all_size_list[idx - 1])  # ReLUを使う場合に推奨される初期値
+                scale = np.sqrt(2.0 / all_size_list[idx - 1])  # ReLU를 사용할 때의 권장 초깃값
             elif str(weight_init_std).lower() in ('sigmoid', 'xavier'):
-                scale = np.sqrt(1.0 / all_size_list[idx - 1])  # sigmoidを使う場合に推奨される初期値
+                scale = np.sqrt(1.0 / all_size_list[idx - 1])  # sigmoid를 사용할 때의 권장 초깃값
             self.params['W' + str(idx)] = scale * np.random.randn(all_size_list[idx - 1], all_size_list[idx])
             self.params['b' + str(idx)] = np.zeros(all_size_list[idx])
 
-
-    def predict(self, x, train_flg=False):
-        for key, layer in self.layers.items():
-            if "Dropout" in key or "BatchNorm" in key:
-                x = layer.forward(x, train_flg)
-            else:
-                x = layer.forward(x)
+    def predict(self, x):
+        for layer in self.layers.values():
+            x = layer.forward(x)
 
         return x
 
-    def loss(self, x, t, train_flg=False):
+    def loss(self, x, t):
         """손실 함수를 구한다.
 
         Parameters
         ----------
         x : 입력 데이터
         t : 정답 레이블
+
+        Returns
+        -------
+        손실 함수의 값
         """
-        y = self.predict(x, train_flg)
+        y = self.predict(x)
 
         weight_decay = 0
         for idx in range(1, self.hidden_layer_num + 2):
@@ -114,15 +95,15 @@ class MultiLayerNet:
 
         return self.last_layer.forward(y, t) + weight_decay
 
-    def accuracy(self, X, T):
-        Y = self.predict(X, train_flg=False)
-        Y = np.argmax(Y, axis=1)
-        if T.ndim != 1: T = np.argmax(T, axis=1)
+    def accuracy(self, x, t):
+        y = self.predict(x)
+        y = np.argmax(y, axis=1)
+        if t.ndim != 1: t = np.argmax(t, axis=1)
 
-        accuracy = np.sum(Y == T) / float(X.shape[0])
+        accuracy = np.sum(y == t) / float(x.shape[0])
         return accuracy
 
-    def numerical_gradient(self, X, T):
+    def numerical_gradient(self, x, t):
         """기울기를 구한다(수치 미분).
 
         Parameters
@@ -132,26 +113,35 @@ class MultiLayerNet:
 
         Returns
         -------
-        각 층의 기울기를 담은 사전(dictionary) 변수
+        각 층의 기울기를 담은 딕셔너리(dictionary) 변수
             grads['W1']、grads['W2']、... 각 층의 가중치
             grads['b1']、grads['b2']、... 각 층의 편향
         """
-        loss_W = lambda W: self.loss(X, T, train_flg=True)
+        loss_W = lambda W: self.loss(x, t)
 
         grads = {}
         for idx in range(1, self.hidden_layer_num + 2):
             grads['W' + str(idx)] = numerical_gradient(loss_W, self.params['W' + str(idx)])
             grads['b' + str(idx)] = numerical_gradient(loss_W, self.params['b' + str(idx)])
 
-            if self.use_batchnorm and idx != self.hidden_layer_num + 1:
-                grads['gamma' + str(idx)] = numerical_gradient(loss_W, self.params['gamma' + str(idx)])
-                grads['beta' + str(idx)] = numerical_gradient(loss_W, self.params['beta' + str(idx)])
-
         return grads
 
     def gradient(self, x, t):
+        """기울기를 구한다(오차역전파법).
+
+        Parameters
+        ----------
+        x : 입력 데이터
+        t : 정답 레이블
+
+        Returns
+        -------
+        각 층의 기울기를 담은 딕셔너리(dictionary) 변수
+            grads['W1']、grads['W2']、... 각 층의 가중치
+            grads['b1']、grads['b2']、... 각 층의 편향
+        """
         # forward
-        self.loss(x, t, train_flg=True)
+        self.loss(x, t)
 
         # backward
         dout = 1
@@ -165,17 +155,8 @@ class MultiLayerNet:
         # 결과 저장
         grads = {}
         for idx in range(1, self.hidden_layer_num + 2):
-            grads['W' + str(idx)] = self.layers['Affine' + str(idx)].dW + self.weight_decay_lambda * self.params[
-                'W' + str(idx)]
+            grads['W' + str(idx)] = self.layers['Affine' + str(idx)].dW + self.weight_decay_lambda * self.layers[
+                'Affine' + str(idx)].W
             grads['b' + str(idx)] = self.layers['Affine' + str(idx)].db
 
-            if self.use_batchnorm and idx != self.hidden_layer_num + 1:
-                grads['gamma' + str(idx)] = self.layers['BatchNorm' + str(idx)].dgamma
-                grads['beta' + str(idx)] = self.layers['BatchNorm' + str(idx)].dbeta
-
         return grads
-
-
-
-if __name__ == '__main__':
-    net = MultiLayerNet(784, [100, 100, 100], 10 )
