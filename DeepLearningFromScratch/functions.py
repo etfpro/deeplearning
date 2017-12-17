@@ -11,28 +11,33 @@ import os
 #
 ################################################################################
 
-def identity(x):
-    return x
+# ReLU 함수: 은닉층의 활성화 함수
+def relu(a):
+    return np.maximum(0, a)
 
-def step_func(x):
-    return np.array(x > 0, dtype=np.int)
 
-def sigmoid(x):
-    return 1.0 / (1.0 + np.exp(-x))
+# 항등 함수: 출력층의 활성화 함수 - 회귀, 다중 클래스 분류 문제의 추론 시
+def identity(a):
+    return a
 
-def relu(x):
-    return np.maximum(0, x)
+# 시그모이드 함수: 출력층의 활성화 함수 - 2 클래스 분류에 사용
+def sigmoid(a):
+    return 1.0 / (1.0 + np.exp(-a))
 
-def softmax(x):
-    # 훈련 데이터가 2개 이상인 경우
-    if x.ndim == 2:
-        x = x.T # 최대값이 훈련 데이터의 수 만큼의 배열로 출력 되기 때문에 shape을 맞추기 위해서 전치
-        x = x - np.max(x, axis=0) # 배열 원소 중 가장 큰 수를 빼서 overflow 방지
-        y = np.exp(x) / np.sum(np.exp(x), axis=0)
+
+# 소프트맥스 함수" 출력층의 활성화 함수 - 다중 클래스 분류 문제의 학습에 사용, 실제 추론 시에는 속도를 위해 항등 함수 사용
+def softmax(a):
+    # 데이터가 2개 이상(배치)인 경우
+    if a.ndim == 2:
+        a = a.T # 최대값이 데이터의 수 만큼의 배열로 출력 되기 때문에 shape을 맞추기 위해서 전치
+        a = a - np.max(a, axis=0) # 배열 원소 중 가장 큰 수를 빼서 overflow 방지
+        y = np.exp(a) / np.sum(np.exp(a), axis=0)
         return y.T
     else:
-        x = x - np.max(x)  # 배열 원소 중 가장 큰 수를 빼서 overflow 방지
-        return np.exp(x) / np.sum(np.exp(x))
+        # 데이터가 1개인 경우
+        a = a - np.max(a)  # 배열 원소 중 가장 큰 수를 빼서 overflow 방지
+        return np.exp(a) / np.sum(np.exp(a))
+
 
 
 
@@ -127,6 +132,12 @@ def gradient_descent(f, x, lr=0.01, epoch=100):
 
 
 
+################################################################################
+#
+# 그래프 함수
+#
+################################################################################
+
 
 ################################################################################
 #
@@ -136,4 +147,9 @@ def gradient_descent(f, x, lr=0.01, epoch=100):
 
 
 if __name__ == '__main__':
-    pass
+    x = np.arange(-5.0, 5.0, 0.01)
+    #y = sigmoid(x)
+    y = relu(x)
+    plt.plot(x, y)
+    plt.ylim(-0.1, 2.1)
+    plt.show()
