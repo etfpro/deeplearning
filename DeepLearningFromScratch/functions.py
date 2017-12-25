@@ -135,6 +135,7 @@ def gradient_descent(f, w, lr=0.01, epoch=100):
     return w, np.array(w_history)
 
 
+
 ################################################################################
 #
 # 그래프 함수
@@ -150,4 +151,4 @@ def gradient_descent(f, w, lr=0.01, epoch=100):
 
 
 if __name__ == '__main__':
-    pass:
+    pass
