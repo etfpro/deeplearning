@@ -1,8 +1,5 @@
 # coding: utf-8
-try:
-    import urllib.request
-except ImportError:
-    raise ImportError('You should use Python 3.x')
+import urllib.request
 import os.path
 import gzip
 import pickle
@@ -56,7 +53,7 @@ def _load_label(file_name):
     return labels
 
 
-# mnist 이미지 파일을 numpy 배열(60,0000 X 784)로 읽는다.
+# MNIST 이미지 파일을 numpy 배열(데이터수 X 784)로 읽는다.
 def _load_img(file_name):
     file_path = dataset_dir + "/" + file_name
     
@@ -71,7 +68,7 @@ def _load_img(file_name):
     return data
 
 
-# mnist 파일들을 읽어서 numpy 배열로 변환
+# MNIST 파일들을 읽어서 numpy 배열로 변환
 def _convert_numpy():
     dataset = {}
     dataset['train_img'] =  _load_img(key_file['train_img'])
@@ -82,48 +79,34 @@ def _convert_numpy():
     return dataset
 
 
-# mnist 데이터를 다운받아서 numpy 배열로 변환하여 pickle 파일로 저장
+# MNIST 데이터를 다운받아서 numpy 배열로 변환하여 pickle 파일로 저장
 def init_mnist():
     download_mnist()
     dataset = _convert_numpy()
-    print("Creating pickle file ...")
     with open(pickle_path, 'wb') as f:
         pickle.dump(dataset, f, -1)
-    print("Done!")
 
 
 # 레이블 데이터를 10개의 출력으로 one-hot encoding (입력데이터 수 X 10)
 def _change_ont_hot_label(X):
     T = np.zeros((X.size, 10))
-    for idx, data in enumerate(T):
-        data[X[idx]] = 1
+    for idx, row in enumerate(T):
+        row[X[idx]] = 1
         
     return T
     
 
-# pickle 파일로 저장된 MNIST 데이터셋 읽어오기
+# MNIST 데이터셋 읽어오기
+# Returns: (훈련 이미지, 훈련 레이블), (시험 이미지, 시험 레이블)
 def load_mnist(normalize=True, flatten=True, one_hot_label=False):
-    """MNIST 데이터셋 읽기
-    
-    Parameters
-    ----------
-    normalize : 이미지의 픽셀 값을 0.0~1.0 사이의 값으로 정규화할지 정한다.
-    one_hot_label : 
-        one_hot_label이 True면、레이블을 원-핫(one-hot) 배열로 돌려준다.
-        one-hot 배열은 예를 들어 [0,0,1,0,0,0,0,0,0,0]처럼 한 원소만 1인 배열이다.
-    flatten : 입력 이미지를 1차원 배열로 만들지를 정한다. 
-    
-    Returns
-    -------
-    (훈련 이미지, 훈련 레이블), (시험 이미지, 시험 레이블)
-    """
-    # pickle 파일로 저정된 mnist 데이터를 읽어들인다.
+
+    # MNIST 데이터 셋을 다운받아서 읽어들여 numpy 배열로 변환하여 pickle 파일로 저장
     if not os.path.exists(pickle_path):
         init_mnist()
 
+    # MNIST 데이터 셋 pickle 피일을 읽는다.
     with open(pickle_path, 'rb') as f:
         dataset = pickle.load(f)
-
 
     # 입력값을 0.0 ~ 1.0 사이의 실수값으로 정규화
     if normalize:
@@ -131,16 +114,15 @@ def load_mnist(normalize=True, flatten=True, one_hot_label=False):
             dataset[key] = dataset[key].astype(np.float32)
             dataset[key] /= 255.0
 
-
-    # on-hot encoding
+    # 레이블에 대한 one-hot encoding
     if one_hot_label:
         dataset['train_label'] = _change_ont_hot_label(dataset['train_label'])
-        dataset['test_label'] = _change_ont_hot_label(dataset['test_label'])    
-
+        dataset['test_label'] = _change_ont_hot_label(dataset['test_label'])
 
     if not flatten:
          for key in ('train_img', 'test_img'):
             dataset[key] = dataset[key].reshape(-1, 1, 28, 28)
+            #dataset[key] = dataset[key].reshape(-1, 28, 28)
 
     return (dataset['train_img'], dataset['train_label']), (dataset['test_img'], dataset['test_label']) 
 
@@ -183,32 +165,45 @@ def predict(network, x):
 ################################################################################
 
 def predictTest():
+    # MNIST 테스트용 데이터(10,000개) 로드
     test_data, test_label = getTestData()
-    network = initNetwork()
+
+    dataCount = len(test_label)
+    print("Count of test data: ", dataCount)
 
     batch_size = 100
+
     accuracy_cnt = 0
 
-    for i in range(0, len(test_data), batch_size):
+    # 미리 학습된 신경망 로드
+    network = loadTrainedNetwork()
+    for i in range(0, dataCount, batch_size):
         x_batch = test_data[i:i+batch_size]
         y_batch = predict(network, x_batch)
         p = np.argmax(y_batch, axis=1)
         accuracy_cnt += np.sum(p == test_label[i:i+batch_size])
 
-    print("Accuracy:", accuracy_cnt / len(test_data))
+    print("Accuracy: %.2f%%" % (accuracy_cnt / len(test_data) * 100))
 
 
-def test():
-    test_data, _ = getTestData()
-    network = initNetwork()
-    W1, W2, W3 = network["W1"], network["W2"], network["W3"]
+def imageShowTest():
+    from PIL import Image
 
-    print(test_data.shape)
-    print(test_data[0].shape)
-    print(W1.shape)
-    print(W2.shape)
-    print(W3.shape)
+    def img_show(img):
+        pil_img = Image.fromarray(np.uint8(img))
+        pil_img.show()
 
+    (x_train, t_train), _ = load_mnist(flatten=False, normalize=False)
+
+    img = x_train[32]
+    label = t_train[32]
+    print(label)
+
+    print(img.shape)
+    img = img.reshape(28, 28)
+    print(img.shape)
+
+    img_show(img)
 
 
 if __name__ == '__main__':
