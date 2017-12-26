@@ -21,7 +21,7 @@ test_acc_list = []
 
 
 # 하이퍼파라메터
-iters_num = 20000 # SGD 반복회수
+iters_num = 10000 # SGD 반복회수
 train_size = train_data.shape[0] # 훈련데이터 개수
 batch_size = 100 # 미니배치 크기
 
@@ -38,6 +38,7 @@ learningRate = 0.01
 network.optimizer = Adam(learningRate)
 
 
+
 for i in range(iters_num):
 
     # 미니배치 획득
@@ -46,12 +47,16 @@ for i in range(iters_num):
     t_batch = train_label[batch_mask]
 
     # 기울기 계산 및 가중치 갱신
-    network.train(x_batch, t_batch)
+    #network.train(x_batch, t_batch)
+    grad = network.numerical_gradient(x_batch, t_batch)
+    for key in ('W1', 'b1', 'W2', 'b2'):
+        network.params[key] -= learningRate * grad[key]
 
     # 학습 경과 기록: 매 SGD 당 손실값 기록
     loss = network.loss(x_batch, t_batch)
     train_loss_list.append(loss)
 
+    print(">> Loss", i, ": ", loss)
     # 1 주기 당 정확도 계산 & 기록
     if i % iter_per_epoch == 0:
         # 훈련데이터에 대한 정확도 계산 & 기록
