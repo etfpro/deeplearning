@@ -59,17 +59,19 @@ def mean_squared_error(y, t):
 #  t: 정답레이블
 def cross_entropy_error(y, t):
 
-    # 신경망의 출력이 1차원(출력이 1개)인 경우에도 처리 가능하도록 행열로 변환
+    # 신경망의 출력이 1차원(훈련 데이트의 수가 1개)인 경우에도
+    # 배치 스타일(행렬) 처리 가능하도록 행렬로 변환
     if y.ndim == 1:
         t = t.reshape(1, t.size)
         y = y.reshape(1, y.size)
 
     # 정답레이블이 one-hot-encoding 벡터인 경우,
-    # 정답레이블에서 최대 인덱스를 구해서 실제 레이블 값 형식의 배열(1차원)으로 변환
+    # 실제 레이블 값 형식으로 변환
     if t.size == y.size:
         t = t.argmax(axis=1)
 
-    batch_size = y.shape[0] # 훈련데이터의 개수(미니 배치 크기
+    # 훈련 데이터의 개수(미니배치 크기)
+    batch_size = y.shape[0]
 
     # np.arange(batch_size): [0, 1, ..., 훈련데이터의 개수 - 1]의 numpy 배열(1차원) 생성
     # ==> y[[0, 1, ..., batch_size - 1], t]: 출력 데이터에서 정답 부분만 추출하여 배열(1차원) 생성
@@ -91,9 +93,9 @@ def numerical_diff(f, x):
 
 
 
-# 손실함수를 가중치로 미분하여 기울기 계산
+# 기울기 계산 : 모든 변수의 편미분 벡터
 # 가중치의 개수 X 2 번 손실함수를 계산하기 때문에 매우 비효율적인 방법
-def numerical_gradient(lossFunc, x):
+def numerical_gradient(f, x):
     h = 1e-4  # 0.0001
     grad = np.zeros_like(x) # x의 형상과 같은 배열 생성
 
@@ -105,30 +107,32 @@ def numerical_gradient(lossFunc, x):
 
         # f(x+h) 계산
         x[idx] = x_org + h
-        fxh1 = lossFunc(x)  # f(x+h)
+        fxh1 = f(x)  # f(x+h)
 
         # f(x-h) 계산
         x[idx] = x_org - h
-        fxh2 = lossFunc(x)
+        fxh2 = f(x)
 
-        # 미분
+        # 편미분: x[idx] 값의 미분값만 계산, 나머지는 0
         grad[idx] = (fxh1 - fxh2) / (2 * h)
 
         x[idx] = x_org  # 값 복원
+
         it.iternext()
 
     return grad
 
 
 # 경사하강 기울기 조절
-def gradient_descent(f, x, lr=0.01, epoch=100):
+def gradient_descent(f, w, lr=0.01, epoch=100):
     w_history = [] # 기울기 변화 과정을 담은 배열
 
     for i in range(epoch):
-        w_history.append(x.copy())
-        x -= lr * numerical_gradient(f, x)
+        w_history.append(w.copy())
+        w -= lr * numerical_gradient(f, w)
 
-    return x, np.array(w_history)
+    # 최종 변화된 w와 w의 변화과정을 리턴
+    return w, np.array(w_history)
 
 
 
@@ -147,9 +151,4 @@ def gradient_descent(f, x, lr=0.01, epoch=100):
 
 
 if __name__ == '__main__':
-    x = np.arange(-5.0, 5.0, 0.01)
-    #y = sigmoid(x)
-    y = relu(x)
-    plt.plot(x, y)
-    plt.ylim(-0.1, 2.1)
-    plt.show()
+    pass

@@ -17,13 +17,15 @@ class TwoLayerNet:
         self.params = {}
 
         # hidden layer 가중치 초기화 - He 초기값
-        self.params['W1'] = np.random.randn(input_size, hidden_size) * np.sqrt(2.0 / input_size)
+        self.params['W1'] = np.random.randn(input_size, hidden_size) * 0.01
+        #self.params['W1'] = np.random.randn(input_size, hidden_size) * np.sqrt(2.0 / input_size)
         #self.params['W1'] = np.random.randn(input_size, hidden_size) * np.sqrt(1.0 / input_size)
         #self.params['W1'] = np.random.randn(input_size, hidden_size) * 0.01
         self.params['b1'] = np.zeros(hidden_size)
 
         # output layer 가중치 초기화 - He 초기값
-        self.params['W2'] = np.random.randn(hidden_size, output_size) * np.sqrt(2.0 / hidden_size)
+        self.params['W2'] = np.random.randn(hidden_size, output_size) * 0.01
+        #self.params['W2'] = np.random.randn(hidden_size, output_size) * np.sqrt(2.0 / hidden_size)
         #self.params['W2'] = np.random.randn(hidden_size, output_size) * np.sqrt(1.0 / hidden_size)
         #self.params['W2'] = np.random.randn(hidden_size, output_size) * 0.01
         self.params['b2'] = np.zeros(output_size)
@@ -32,43 +34,61 @@ class TwoLayerNet:
         ########################################################################
         # 각 계층 생성
         ########################################################################
-        self.layers = OrderedDict()
+        #self.layers = OrderedDict()
 
         # hiden layer
-        self.layers['Affine1'] = Affine(self.params['W1'], self.params['b1'])
-        self.layers['Relu1'] = Relu()
+        #self.layers['Affine1'] = Affine(self.params['W1'], self.params['b1'])
+        #self.layers['Relu1'] = Relu()
 
         # output layer
-        self.layers['Affine2'] = Affine(self.params['W2'], self.params['b2'])
-        self.lastLayer = SoftmaxWithLoss() # Softmax와 오차함수 계층은 실제 추론에서는 사용하지 않기 때문에 별도의 변수에 저장
+        #self.layers['Affine2'] = Affine(self.params['W2'], self.params['b2'])
+        #self.lastLayer = SoftmaxWithLoss() # Softmax와 오차함수 계층은 실제 추론에서는 사용하지 않기 때문에 별도의 변수에 저장
 
 
         ########################################################################
         # 가중치 갱신 optimizer
         ########################################################################
-        self.optimizer = optimizer
+        #self.optimizer = optimizer
 
 
 
     # 추론(예측)
     # hidden layer ~ output layer의 Affine 계층까지
     def predict(self, x):
-        for layer in self.layers.values():
-            x = layer.forward(x)
+        W1, W2 = self.params['W1'], self.params['W2']
+        b1, b2 = self.params['b1'], self.params['b2']
 
-        return x
+        # Hidden Layer
+        a1 = np.dot(x, W1) + b1
+        z1 = func.sigmoid(a1)
+
+        # Output Layer
+        a2 = np.dot(z1, W2) + b2
+        y = func.softmax(a2)
+
+        return y
+
+        #for layer in self.layers.values():
+        #    x = layer.forward(x)
+
+        #return x
 
 
 
-    # 손실함수(CEE): 순전파를 통한 손실을 구한다
+    # 손실함수(CEE): 순전파를 통한 손실을 구하기 때문에 속도가 느리다.
     # x: 입력 데이터
     # t: 정답 레이블
     def loss(self, x, t):
+        y = self.predict(x)
+        return func.cross_entropy_error(y, t)
+        return l
+
+
         # hidden layer ~ output layer의 Affine 계층
-        a = self.predict(x)
+        #a = self.predict(x)
 
         # Softmax - Cross Entropy Error 계층
-        return self.lastLayer.forward(a, t)
+        #return self.lastLayer.forward(a, t)
 
 
 
@@ -99,14 +119,16 @@ class TwoLayerNet:
         return grads
 
 
-    # 손실함수의 기울기 계산: 손실함수를 가중치에 대해서 수치 미분
+    # 손실함수의 기울기 계산
+    # 손실함수를 가중치에 대해서 수치 미분
     # 계산 시간이 오래 걸린다
     # x: 입력 데이터
     # t: 정답 레이블
     def numerical_gradient(self, x, t):
         loss_W = lambda W: self.loss(x, t)
         grads = {}
-        # 모든 레이어의 가중치를 마지막 출력층의 손실함수를 미분한 값으로 갱신
+
+        # 모든 레이어의 기울기를 출력층의 손실함수를 미분한 값으로 계산
         grads['W1'] = func.numerical_gradient(loss_W, self.params['W1'])
         grads['b1'] = func.numerical_gradient(loss_W, self.params['b1'])
         grads['W2'] = func.numerical_gradient(loss_W, self.params['W2'])
@@ -126,21 +148,25 @@ class TwoLayerNet:
     # 정확도 측정
     def accuracy(self, x, t):
         # 출력값 중 가장 큰 값의 인덱스 추출
-        y = np.argmax(self.predict(x), axis=1)
+        y = self.predict(x)
+        y = np.argmax(y, axis=1)
 
-        # 정답 레이블이 one-hot-encoding 인 경우 정답 인덱스(값이 1) 추출
+        # 정답 레이블이 one-hot-encoding 인 경우 정답 인덱스 추출
         if t.ndim != 1:
             t = np.argmax(t, axis=1)
 
-        return np.sum(y == t) / float(x.shape[0])
+        return np.sum(y == t) / float(x.shape[0]) # x.shape[0]는 0행의 크기 - 데이터의 수
 
 
 if __name__ == '__main__':
-    net = TwoLayerNet(input_size=784, hidden_size=111, output_size=10)
+    net = TwoLayerNet(input_size=784, hidden_size=100, output_size=10)
 
     x = np.random.rand(100, 784) # 더미 입력 데이터 100개
     t = np.random.rand(100, 10)  # 더미 정답 레이블 100개
 
+    y = net.predict(x)
+
+    print(y)
 
     """
     print(grads['W1'].shape)
