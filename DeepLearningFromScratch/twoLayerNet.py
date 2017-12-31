@@ -81,7 +81,6 @@ class TwoLayerNet:
     def loss(self, x, t):
         y = self.predict(x)
         return func.cross_entropy_error(y, t)
-        return l
 
 
         # hidden layer ~ output layer의 Affine 계층
@@ -128,7 +127,7 @@ class TwoLayerNet:
         loss_W = lambda W: self.loss(x, t)
         grads = {}
 
-        # 모든 레이어의 기울기를 출력층의 손실함수를 미분한 값으로 계산
+        # 모든 레이어의 기울기를 손실함수를 미분한 값으로 계산
         grads['W1'] = func.numerical_gradient(loss_W, self.params['W1'])
         grads['b1'] = func.numerical_gradient(loss_W, self.params['b1'])
         grads['W2'] = func.numerical_gradient(loss_W, self.params['W2'])
