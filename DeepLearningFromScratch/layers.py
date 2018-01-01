@@ -4,7 +4,7 @@
 import numpy as np
 import functions as func
 
-# Affine 변환 계층 (x·W + b)
+# Affine 변환 계층 (X·W + b)
 class Affine:
     def __init__(self, W, b):
         self.W = W
@@ -46,33 +46,40 @@ class Affine:
 
 
 # ReLU 활성화 함수 계층
+# 은닉계층의 활성화 함수로 주로 사용
 class Relu:
     def __init__(self):
-        # 입력값이 0 이하인지를 나타내는 배열
+        # 입력값 중  0아하 인 것들을 나타내는 배열
         # 추후 역전파를 위한 미분에 사용
         self.mask = None
 
+
+    # 입력값 x는 Affine 계층의 출력값
     def forward(self, x):
         self.mask = (x <= 0)
         out = x.copy() # 입력 값을 변화시키지 않기 위해 복사
-        out[self.mask] = 0 # x <= 0은 0, x > 0은 x
+        out[self.mask] = 0 # 0 이하인 것들에 대해 0으로 변경
         return out
 
+
     # ReLU 함수 미분
-    # dout은 역전파 시킬 값(이전 계층의 미분 값)
+    # 0보다 작거나 같은 경우 0, 0보다 큰 경우 1
+    # dout은 이전 계층의 미분 값
     def backward(self, dout):
-        dout[self.mask] = 0 # ReLU 미분: 0보다 작거나 같은 경우 0, 0보다 큰 경우 1
+        dout[self.mask] = 0 # 0 이하인 것들에 대해 0으로 변경
         dx = dout
         return dx
 
 
 
 # Sigmoid 활성화 함수 계층
+# 2진 분류 시 출력층의 활성화 함수로 주로 사용
 class Sigmoid:
     def __init__(self):
         self.out = None
 
 
+    # 입력값 x는 Affine 계층의 출력값
     def forwward(self, x):
         self.out = 1.0 / (1.0 + np.exp(-x))
         out = self.out
@@ -80,7 +87,8 @@ class Sigmoid:
 
 
     # Sigmoid 함수 미분
-    # dout은 역전파 시킬 값(이전 계층의 미분 값)
+    # y*(1-y)
+    # dout은 이전 계층의 미분 값
     def backward(self, dout):
         dx = dout * (1.0 - self.out) * self.out
         return dx;
