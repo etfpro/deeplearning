@@ -98,7 +98,7 @@ def _change_ont_hot_label(X):
 
 # MNIST 데이터셋 읽어오기
 # Returns: (훈련 이미지, 훈련 레이블), (시험 이미지, 시험 레이블)
-def load_mnist(normalize=True, flatten=True, one_hot_label=False):
+def load_mnist(normalize=True, flatten=True, one_hot_label=True):
 
     # MNIST 데이터 셋을 다운받아서 읽어들여 numpy 배열로 변환하여 pickle 파일로 저장
     if not os.path.exists(pickle_path):

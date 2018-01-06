@@ -36,8 +36,8 @@ class Affine:
 
 
     # Affine 함수 미분
-    # 입력 - dout 다음 계층(ReLU등 활성화 함수 계층)의 미분 값
-    # 출력 - 이전 계충으로 전파할 값
+    # 입력 - dout은 다음 계층(활성화 함수 계층)의 미분 값
+    # 출력 - 이전 계충(활성화함수 계층)으로 전파할 값
     def backward(self, dout):
         self.dW = np.dot(self.x.T, dout)
         self.db = np.sum(dout, axis=0)
@@ -58,7 +58,7 @@ class Relu:
         self.mask = None
 
 
-    # 입력값 x는 Affine 계층의 출력값
+    # 입력 - x는 Affine 계층의 출력값
     def forward(self, x):
         self.mask = (x <= 0)
         out = x.copy() # 입력 값을 변화시키지 않기 위해 복사
@@ -69,7 +69,7 @@ class Relu:
     # ReLU 함수 미분
     # 0보다 작거나 같은 경우 0, 0보다 큰 경우 1
     # 입력 - dout은 다음 계층(Affine 계층)의 미분 값
-    # 출력 - 이전 계충으로 전파할 값
+    # 출력 - 이전 계충(Affine 계증)으로 전파할 값
     def backward(self, dout):
         dout[self.mask] = 0 # 0 이하인 것들에 대해 0으로 변경
         dx = dout
@@ -84,7 +84,7 @@ class Sigmoid:
         self.out = None
 
 
-    # 입력값 x는 Affine 계층의 출력값
+    # 입력 - x는 Affine 계층의 출력값
     def forwward(self, x):
         self.out = 1.0 / (1.0 + np.exp(-x))
         out = self.out
@@ -94,7 +94,7 @@ class Sigmoid:
     # Sigmoid 함수 미분
     # y*(1-y)
     # 입력 - dout은 다음 계층의 미분 값
-    # 출력 - 이전 계충으로 전파할 값
+    # 출력 - 이전 계충(Affine계층)으로 전파할 값
     def backward(self, dout):
         dx = dout * (1.0 - self.out) * self.out
         return dx;
@@ -107,9 +107,9 @@ class SoftmaxWithLoss:
     def __init__(self):
         self.loss = None # 손실
         self.y = None # Softamx 출력
-        self.t = None # 정답 레이블(One-hot Encoding)
+        self.t = None # 정답 레이블
 
-    # x: 입력
+    # 입력값 x는 Affine 계층의 출력값
     # t: 정답 레이블(마지막 계층이기 때문에 정답 레이블이 필요)
     def forward(self, x, t):
         self.t = t
@@ -118,18 +118,50 @@ class SoftmaxWithLoss:
         return self.loss
 
 
+    # 입력 - dout은 마지막 계층이기 때문에 1
+    # 출력 - 이전 계충(Affine 계층)으로 전파할 값
     def backward(self, dout = 1):
         batch_size = self.t.shape[0]
 
         # 정답 레이블이 one-hot encoding 형태인 경우
         if self.t.size == self.y.size:
-            dx = (self.y - self.t) / batch_size # 배치의 수로 나눠서 데이터 1개당 오차를 전파
+            dx = self.y - self.t
         else:
             # 정답 레이블이 레이블 형태인 경우
             dx = self.y.copy()
             dx[np.arange(batch_size), self.t] -= 1 # 정답 레이블에 해당하는 항목에서만 1(정답 확률)을 뺀다
 
+        # 배치의 수로 나눠서 데이터 1개당 오차를 전파 ????????????????
+        dx /= batch_size
         return dx
+
+
+
+class Layer:
+    def __init__(self, W, b, activation=Relu()):
+        self.affine = Affine(W, b)
+        self.activation = activation
+
+
+    def forward(self, x):
+        x = self.affine.forward(x)
+        if self.activation != None:
+            x = self.activation.forward(x)
+        return x
+
+    def backward(self, dout):
+        if self.activation != None:
+            dout = self.activation.backward(dout)
+        dout = self.affine.backward(dout)
+        return dout
+
+
+    def dW(self):
+        return self.affine.dW
+
+
+    def db(self):
+        return self.affine.db
 
 
 
