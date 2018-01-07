@@ -5,10 +5,12 @@ from mnist import load_mnist
 from twoLayerNet import TwoLayerNet
 import time
 from optimizer import *
+import matplotlib.pyplot as plt
+
 
 
 # 데이터 읽기
-(train_data, train_label), (test_data, test_label) = load_mnist(one_hot_label=True)
+(train_data, train_label), (test_data, test_label) = load_mnist()
 
 # 각 배치 학습별 손실값 변화 히스토리 저장
 train_loss_list = []
@@ -21,20 +23,20 @@ test_acc_list = []
 
 
 # 하이퍼파라메터
-iters_num = 1000 # SGD 반복회수
+iters_num = 20000 # SGD 반복회수
 train_size = train_data.shape[0] # 훈련데이터 개수
 batch_size = 100 # 미니배치 크기
-learning_rate = 0.3 # 학습률
+learning_rate = 0.03 # 학습률
 
 # 1 주기 당 SGD 반복 회수: 전체 훈련데이터를 1회 학습하기 위한 SGD 반복 회수
 iter_per_epoch = int(train_size / batch_size)
 
 # 신경망 생성
 optimizer = SGD(learning_rate)
-#optimizer = Momentum(learning_rate)
-#optimizer = AdaGrad(learning_rate)
+optimizer = Momentum(learning_rate)
+optimizer = AdaGrad(learning_rate)
 #optimizer = RMSprop(learning_rate)
-#network.optimizer = Adam(learning_rate)
+#optimizer = Adam(learning_rate)
 network = TwoLayerNet(input_size=784, hidden_size=50, output_size=10, optimizer=optimizer)
 
 epoch_index = 0

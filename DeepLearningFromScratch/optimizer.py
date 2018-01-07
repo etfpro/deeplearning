@@ -2,13 +2,13 @@ import numpy as np
 
 # 확률적 경사하강법
 class SGD:
-    def __init__(self, lr=00.1):
+    def __init__(self, lr=0.01):
         self.lr = lr
 
 
     # 가중치 업데이트(1회)
-    # params: 업데이트할 가중치, 편차 행렬
-    # grads: 가중치, 편차에 대한 미분값 저장 행렬
+    # params: 업데이트할 가중치 행렬들
+    # grads: 가중치에 대한 미분값(기울기) 행렬
     def update(self, params, grads):
         for key in params.keys():
             params[key] -= self.lr * grads[key]
@@ -18,6 +18,8 @@ class SGD:
 # Gradient Descent를 통해 이동하는 과정에 일종의 관성/탄력을 주는 방식
 # 현재의 기울기를 통해 이동하는 방향과는 별개로, 과거에 이동했던 방식을 기억하면서 그 방향으로 일정 정도를 추가적으로 이동하는 방식
 # 자주 이동하는 방향에 관성이 걸리게 되고, 진동을 하더라도 중앙으로 가는 방향에 힘을 얻기 때문에 SGD에 비해 상대적으로 빠르게 이동할 수 있다.
+# v = momentum * v + learing_rate * 기울기, W = W - v (v 초기값은 0)
+# momentum이 1 미만이기 때문에 학습이 진행될수록 과거의 갱신량은 점점 작아지게 된다
 class Momentum:
     def __init__(self, lr=00.1, momentum=0.9):
         self.lr = lr
@@ -26,10 +28,10 @@ class Momentum:
 
 
     # 가중치 업데이트(1회)
-    # params: 업데이트할 가중치, 편차 행렬
-    # grads: 가중치, 편차에 대한 미분값 저장 행렬
+    # params: 업데이트할 가중치 행렬들
+    # grads: 가중치에 대한 미분값(기울기) 행렬
     def update(self, params, grads):
-        # 최초에 매개변수(가중치, 편차)와 동일한 형상의 행렬로 초기화(초기값은 0)
+        # 최초에는 업데이트할 가중치와 동일한 형상의 행렬로 초기화(초기값은 0)
         if self.v is None:
             self.v = {}
             for key, val in params.items():
@@ -42,11 +44,15 @@ class Momentum:
 
 
 
-# AdaGrad - Adaptive Gradients, 학습률 감소
+# AdaGrad - Adaptive Gradients, 학습률 감소 기법
 # 가중치를 update할 때 각각의 가중치마다 학습률을 다르게 설정해서 이동
-# 기본적인 아이디어는 '지금까지 많이 변화하지 않은 가중치들은 학습률을 크게 하고, 지금까지 많이 변화했던 가중치들은 학습률을 작게 하자’라는 것
-# 자주 등장하거나 변화를 많이 한 가중치들의 경우 최적에 가까이 있을 확률이 높기 때문에 작은 크기로 이동하면서 세밀한 값을 조정하고,
-# 적게 변화한 변수들은 최적 값에 도달하기 위해서는 많이 이동해야할 확률이 높기 때문에 먼저 빠르게 loss 값을 줄이는 방향으로 이동하려는 방식
+# 기본적인 아이디어는 '지금까지 적게 갱신된 가중치들은 학습률을 크게 하고, 지금까지 많이 갱신된 가중치들은 학습률을 작게 하자’라는 것
+# 자주 등장하거나 변화를 많이 한 가중치들의 경우 최적에 가까이 있을 확률이 높기 때문에, 가중치를 작게 하여 작은 크기로 이동하면서 세밀한 값을 조정하고,
+# 자주 등장하지 않거나 적게 변화한 가중치들은 최적 값에 도달하기 위해서는 많이 이동해야할 확률이 높기 때문에, 먼저 빠르게 손실값을 줄이는 방향으로 이동하려는 방식
+# h = h + 기울기^2, W = W - learning_rate/sqrt(h) * 기울기 (h 초기값은 0)
+# 과거의 기울기를 제곱하여 계속 더해가기 대문에, 학습을 진행할수록 갱신 강도가 약해지는 문제가 있기 때문에, 무한히 계속 학습한다면 어느 순간 갱신량이 0이되어
+# 전혀 갱신되지 않는 문제가 발생
+# 이 문제를 개선하기 위해서 먼 과거의 기울기는 서서히 잊고 새로운 기울기 정보를 크게 반영(지수이동평균)하는 RMSProp 기법이 있다.
 class AdaGrad:
     def __init__(self, lr=0.01):
         self.lr = lr
@@ -54,10 +60,10 @@ class AdaGrad:
 
 
     # 가중치 업데이트(1회)
-    # params: 업데이트할 가중치, 편차 행렬
-    # grads: 가중치, 편차에 대한 미분값 저장 행렬
+    # params: 업데이트할 가중치 행렬들
+    # grads: 가중치에 대한 미분값(기울기) 행렬
     def update(self, params, grads):
-        # 최초에 매개변수(가중치, 편차)와 동일한 형상의 행렬로 초기화(초기값은 0)
+        # 최초에는 업데이트할 가중치와 동일한 형상의 행렬로 초기화(초기값은 0)
         if self.h is None:
             self.h = {}
             for key, val in params.items():
@@ -66,7 +72,7 @@ class AdaGrad:
         # 가중치 업데이트
         for key in params.keys():
             self.h[key] += grads[key] ** 2
-            params[key] -= self.lr * grads[key] / (np.sqrt(self.h[key]) + 1e-7)
+            params[key] -= (self.lr / (np.sqrt(self.h[key]) + 1e-7)) * grads[key]
 
 
 # RMSprop - AdaGrad 개선 버전, 학습률 감소
@@ -96,6 +102,8 @@ class RMSProp:
 
 # Mementum(관성) + RMSProp(학습률 감소) 기법 혼합
 # 이 방식에서는 Momentum 방식과 유사하게 지금까지 계산해온 기울기의 지수평균을 저장하며, RMSProp과 유사하게 기울기의 제곱값의 지수평균을 저장한다.
+
+
 
 class Adam:
     def __init__(self, lr=0.001, beta1=0.9, beta2=0.999):

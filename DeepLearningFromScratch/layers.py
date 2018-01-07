@@ -2,6 +2,7 @@
 # 역전파 시 해당 함수를 국소적 미분한 값을 곱한다.
 
 import numpy as np
+import functions as func
 
 
 # Affine 변환 계층 (X·W + b)
@@ -23,6 +24,7 @@ class Affine:
         self.original_x_shape = None
 
 
+    #  입력 - x는 이전 레이어의 출력값
     def forward(self, x):
         self.original_x_shape = x.shape
 
