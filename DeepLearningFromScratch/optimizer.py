@@ -96,23 +96,20 @@ class RMSProp:
         for key in params.keys():
             # 이전 기울기를 감소시킨다.
             self.h[key] = self.decay_rate * self.h[key] + (1 - self.decay_rate) * grads[key] ** 2
-            params[key] -= self.lr * grads[key] / (np.sqrt(self.h[key]) + 1e-7)
+            params[key] -= (self.lr / (np.sqrt(self.h[key]) + 1e-7)) * grads[key]
 
 
 
-# Mementum(관성) + RMSProp(학습률 감소) 기법 혼합
+# Adaptive Moment Estimation: Mementum(관성) + RMSProp(학습률 감소) 기법 혼합
 # 이 방식에서는 Momentum 방식과 유사하게 지금까지 계산해온 기울기의 지수평균을 저장하며, RMSProp과 유사하게 기울기의 제곱값의 지수평균을 저장한다.
-
-
-
 class Adam:
-    def __init__(self, lr=0.001, beta1=0.9, beta2=0.999):
+    def __init__(self, lr=0.01, beta1=0.9, beta2=0.999):
         self.lr = lr
         self.beta1 = beta1 # 1차 momentum용 계수
         self.beta2 = beta2 # 2차 momentum용 계수
         self.iter = 0
-        self.m = None # RMSProp의
-        self.v = None # Momentum의 관성
+        self.m = None
+        self.v = None
 
     def update(self, params, grads):
         if self.m is None:
@@ -143,13 +140,13 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from collections import OrderedDict
 
+    # 손실함수
     def f(x, y):
         return x**2 / 20.0 + y**2
 
-    # 위의 f(x, y) 함수 미분
+    # 위의 손실함수 f(x, y) 함수 미분
     def df(x, y):
         return x / 10.0, 2.0 * y
-
 
     # optimizer들
     optimizers = OrderedDict()
@@ -159,40 +156,44 @@ if __name__ == '__main__':
     optimizers["Adam"] = Adam(lr=0.3)
 
 
-    idx = 1
-
     # 가중치 매개변수 x, y
     params = {}
 
-    # 기울기
+    # 가중치 x, y에 대한 기울기
     grads = {}
     grads['x'], grads['y'] = 0, 0
+
+    idx = 1
 
     # 각 optimizer 별로 기울기 갱신
     for key in optimizers:
         optimizer = optimizers[key]
-        x_history = []
-        y_history = []
+
+        # 가중치 매개변수 x, y의 변화를 저장
+        x_history, y_history = [], []
+
+        # 가중치 매개변수 x, y 초기값
         params['x'], params['y'] = -7.0, 2.0
 
-        # 매개변수 갱신(경사하강)
+        # 매개변수 갱신(경사하강) 수행
         for i in range(30):
+            # 이전 가중치 매개변수 x, y 값 저장
             x_history.append(params['x'])
             y_history.append(params['y'])
 
-            # 기울기 계산(미분) 후, 가중치 갱신
+            # 가중치 매개변수 x, y에 대한 미분-기울기 계산
             grads['x'], grads['y'] = df(params['x'], params['y'])
+
+            # 가중치 매개변수 x, y를 기울기에 의해 갱신
             optimizer.update(params, grads)
 
-
-        # 경사 하강 궤적 그래프 그리기
-        x = np.arange(-10, 10, 0.01)
-        y = np.arange(-5, 5, 0.01)
-
+        # 가중치 매개변수 (x, y) 쌍에 대한 손실 함수값 Z 계산
+        x = np.arange(-12, 12, 0.01)
+        y = np.arange(-4, 4, 0.01)
         X, Y = np.meshgrid(x, y)
         Z = f(X, Y)
 
-        # 외곽선 단순화
+        # 손실함수 값 중 7보다 큰 값은 0으로 변경하여 0~7 사이의 값만 표시
         mask = Z > 7
         Z[mask] = 0
 
@@ -200,10 +201,10 @@ if __name__ == '__main__':
         plt.subplot(2, 2, idx)
         idx += 1
         plt.plot(x_history, y_history, 'o-', color="red")
-        plt.contour(X, Y, Z)
-        plt.ylim(-10, 10)
-        plt.xlim(-10, 10)
         plt.plot(0, 0, '+')
+        plt.contour(X, Y, Z) # 등고선 그리기
+        plt.xlim(-12, 12)
+        plt.ylim(-5, 5)
         # colorbar()
         # spring()
         plt.title(key)
