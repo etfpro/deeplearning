@@ -24,18 +24,17 @@ train_loss_lists = OrderedDict()
 
 
 # 하이퍼파라메터
-iters_num = 3000 # SGD 반복회수
+iters_num = 2000 # SGD 반복회수
 train_size = train_data.shape[0] # 훈련데이터 개수
-batch_size = 100 # 미니배치 크기
+batch_size = 128 # 미니배치 크기
 learning_rate = 0.01 # 학습률
 
 # 1 주기 당 SGD 반복 회수: 전체 훈련데이터를 1회 학습하기 위한 SGD 반복 회수
 iter_per_epoch = int(train_size / batch_size)
 
-
+optimizers = {"SGD":SGD(learning_rate), "Momentum":Momentum(learning_rate), "AdaGrad":AdaGrad(learning_rate), "RMSProp":RMSProp(learning_rate), "Adam":Adam(learning_rate)}
 markers = {'SGD': 'o', 'Momentum': 's', 'AdaGrad': 'd', 'RMSProp':'.', 'Adam':'x'}
 colors = {'SGD': 'red', 'Momentum': 'blue', 'AdaGrad': 'black', 'RMSProp':'magenta', 'Adam':'green'}
-optimizers = {"SGD":SGD(learning_rate), "Momentum":Momentum(learning_rate), "AdaGrad":AdaGrad(learning_rate), "RMSProp":RMSProp(learning_rate), "Adam":Adam(learning_rate)}
 
 for key in optimizers:
     network = TwoLayerNet(input_size=784, hidden_size=50, output_size=10, optimizer=optimizers[key])
@@ -75,12 +74,12 @@ for key in optimizers:
         train_loss_lists[key] = train_loss_list
 
     x = np.arange(len(train_loss_list))
-    plt.plot(x, train_loss_list, label=key, color=colors[key], linewidth=0.5)
-    #plt.title("")
-    plt.xlabel("Iterations")
-    plt.ylabel("Loss")
-    plt.xlim(0, len(train_loss_list) + 1)
-    plt.ylim(0, 2.5)
+    plt.plot(x, train_loss_list, label=key, color=colors[key], linewidth=0.5, marker=markers[key], markevery=100)
 
+#plt.title("")
+plt.xlabel("Iterations")
+plt.ylabel("Loss")
+plt.xlim(0, len(train_loss_list) + 1)
+plt.ylim(0, 2.5)
 plt.legend()
 plt.show()
