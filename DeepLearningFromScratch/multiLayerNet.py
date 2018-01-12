@@ -1,162 +1,190 @@
-# coding: utf-8
-import sys, os
-
-sys.path.append(os.pardir)  # 부모 디렉터리의 파일을 가져올 수 있도록 설정
+# multiLayerNet.py
 import numpy as np
+import functions as func
 from collections import OrderedDict
 from layers import *
-from functions import numerical_gradient
+from optimizer import *
 
 
+# Fully Connected 심층 신경망
 class MultiLayerNet:
-    """완전연결 다층 신경망
 
-    Parameters
-    ----------
-    input_size : 입력 크기（MNIST의 경우엔 784）
-    hidden_size_list : 각 은닉층의 뉴런 수를 담은 리스트（e.g. [100, 100, 100]）
-    output_size : 출력 크기（MNIST의 경우엔 10）
-    activation : 활성화 함수 - 'relu' 혹은 'sigmoid'
-    weight_init_std : 가중치의 표준편차 지정（e.g. 0.01）
-        'relu'나 'he'로 지정하면 'He 초깃값'으로 설정
-        'sigmoid'나 'xavier'로 지정하면 'Xavier 초깃값'으로 설정
-    weight_decay_lambda : 가중치 감소(L2 법칙)의 세기
-    """
+    # input_size : 입력 크기（MNIST의 경우엔 784）
+    # hidden_size_list : 각 은닉층의 뉴런 수를 담은 리스트（e.g. [100, 100, 100]）
+    # output_size : 출력 크기（MNIST의 경우엔 10）
+    # activation : 활성화 함수 - 'relu' 혹은 'sigmoid'
+    # weight_init_std : 가중치의 표준편차 지정（e.g. 0.01）
+    #                   'relu'나 'he'로 지정하면 'He 초깃값'으로 설정
+    #                   'sigmoid'나 'xavier'로 지정하면 'Xavier 초깃값'으로 설정
+    # weight_decay_lambda : 가중치 감소(L2 법칙)의 세기
+    def __init__(self, input_size, hidden_size_list, output_size, optimizer=SGD(),
+                 activation='relu', weight_init_std='relu'):
 
-    def __init__(self, input_size, hidden_size_list, output_size,
-                 activation='relu', weight_init_std='relu', weight_decay_lambda=0):
-        self.input_size = input_size
-        self.output_size = output_size
-        self.hidden_size_list = hidden_size_list
+        # hidden layer의 수
         self.hidden_layer_num = len(hidden_size_list)
-        self.weight_decay_lambda = weight_decay_lambda
+        #self.weight_decay_lambda = weight_decay_lambda
+
+        ########################################################################
+        # 신경망의 매개변수(가중치, 편차) 초기화
+        ########################################################################
         self.params = {}
+        self.__init_weight(input_size, hidden_size_list, output_size, weight_init_std)
 
-        # 가중치 초기화
-        self.__init_weight(weight_init_std)
 
-        # 계층 생성
-        activation_layer = {'sigmoid': Sigmoid, 'relu': Relu}
+        ########################################################################
+        # 각 계층 생성
+        ########################################################################
         self.layers = OrderedDict()
-        for idx in range(1, self.hidden_layer_num + 1):
-            self.layers['Affine' + str(idx)] = Affine(self.params['W' + str(idx)],
-                                                      self.params['b' + str(idx)])
-            self.layers['Activation_function' + str(idx)] = activation_layer[activation]()
 
-        idx = self.hidden_layer_num + 1
-        self.layers['Affine' + str(idx)] = Affine(self.params['W' + str(idx)],
-                                                  self.params['b' + str(idx)])
+        # hidden layers
+        activation_layer = {'sigmoid': Sigmoid, 'relu': Relu} # 활성화 계층
+        for i in range(1, self.hidden_layer_num + 1):
+            self.layers['Affine' + str(i)] = Affine(self.params['W' + str(i)], self.params['b' + str(i)])
+            self.layers['Activation' + str(i)] = activation_layer[activation]()
 
-        self.last_layer = SoftmaxWithLoss()
+        # output layer
+        i = self.hidden_layer_num + 1
+        self.layers['Affine' + str(i)] = Affine(self.params['W' + str(i)], self.params['b' + str(i)])
+        self.last_layer = SoftmaxWithLoss() # Softmax와 오차함수 계층은 실제 추론에서는 사용하지 않기 때문에 별도의 변수에 저장
 
-    def __init_weight(self, weight_init_std):
-        """가중치 초기화
 
-        Parameters
-        ----------
-        weight_init_std : 가중치의 표준편차 지정（e.g. 0.01）
-            'relu'나 'he'로 지정하면 'He 초깃값'으로 설정
-            'sigmoid'나 'xavier'로 지정하면 'Xavier 초깃값'으로 설정
-        """
-        all_size_list = [self.input_size] + self.hidden_size_list + [self.output_size]
-        for idx in range(1, len(all_size_list)):
+        ########################################################################
+        # 기타
+        ########################################################################
+        #가중치 갱신 optimizer
+        self.optimizer = optimizer
+
+        # 손실값
+        self.lossValue = 0
+
+
+    # 가중치 초기화
+    # weight_init_std : 가중치의 표준편차 지정（e.g. 0.01）
+    #                  'relu'나 'he'로 지정하면 'He 초깃값'으로 설정
+    #                  'sigmoid'나 'xavier'로 지정하면 'Xavier 초깃값'으로 설정
+    def __init_weight(self, input_size, hidden_size_list, output_size, weight_init_std):
+        # 각 layer별 크기에 대한 리스트
+        all_size_list = [input_size] + hidden_size_list + [output_size]
+
+        # 첫번째 hidden layer ~ output layer 까지의 가중치들에 대한 초기화
+        for i in range(1, len(all_size_list)):
             scale = weight_init_std
-            if str(weight_init_std).lower() in ('relu', 'he'):
-                scale = np.sqrt(2.0 / all_size_list[idx - 1])  # ReLU를 사용할 때의 권장 초깃값
-            elif str(weight_init_std).lower() in ('sigmoid', 'xavier'):
-                scale = np.sqrt(1.0 / all_size_list[idx - 1])  # sigmoid를 사용할 때의 권장 초깃값
-            self.params['W' + str(idx)] = scale * np.random.randn(all_size_list[idx - 1], all_size_list[idx])
-            self.params['b' + str(idx)] = np.zeros(all_size_list[idx])
+            if str(weight_init_std).lower() in ('relu', 'he'): # ReLU를 사용할 때의 권장 초기값 - HE
+                scale = np.sqrt(2.0 / all_size_list[i - 1])
+            elif str(weight_init_std).lower() in ('sigmoid', 'xavier'): # sigmoid를 사용할 때의 권장 초기값 - XAVIER
+                scale = np.sqrt(1.0 / all_size_list[i - 1])
 
+            self.params['W' + str(i)] = scale * np.random.randn(all_size_list[i - 1], all_size_list[i])
+            self.params['b' + str(i)] = np.zeros(all_size_list[i])
+
+
+
+    # 추론(예측)
+    # hidden layer ~ output layer의 Affine 계층까지
     def predict(self, x):
         for layer in self.layers.values():
             x = layer.forward(x)
 
         return x
 
+
+
+    # 손실함수(CEE)
+    # x: 입력 데이터
+    # t: 정답 레이블
     def loss(self, x, t):
-        """손실 함수를 구한다.
+        # hidden layer ~ output layer의 Affine 계층
+        a = self.predict(x)
 
-        Parameters
-        ----------
-        x : 입력 데이터
-        t : 정답 레이블
+        # Softmax - Cross Entropy Error 계층
+        self.lossValue = self.last_layer.forward(a, t)
+        return self.lossValue
 
-        Returns
-        -------
-        손실 함수의 값
-        """
-        y = self.predict(x)
+        #weight_decay = 0
+        #for idx in range(1, self.hidden_layer_num + 2):
+        #    W = self.params['W' + str(idx)]
+        #    weight_decay += 0.5 * self.weight_decay_lambda * np.sum(W ** 2)
 
-        weight_decay = 0
-        for idx in range(1, self.hidden_layer_num + 2):
-            W = self.params['W' + str(idx)]
-            weight_decay += 0.5 * self.weight_decay_lambda * np.sum(W ** 2)
+        #return self.last_layer.forward(y, t) + weight_decay
 
-        return self.last_layer.forward(y, t) + weight_decay
 
+
+    # 정확도 측정
     def accuracy(self, x, t):
+        # 출력값 중 가장 큰 값의 인덱스 추출
         y = self.predict(x)
         y = np.argmax(y, axis=1)
-        if t.ndim != 1: t = np.argmax(t, axis=1)
 
-        accuracy = np.sum(y == t) / float(x.shape[0])
-        return accuracy
+        # 정답 레이블이 one-hot-encoding 인 경우 정답 인덱스 추출
+        if t.ndim != 1:
+            t = np.argmax(t, axis=1)
 
-    def numerical_gradient(self, x, t):
-        """기울기를 구한다(수치 미분).
+        return np.sum(y == t) / float(x.shape[0]) # 배치 크기
 
-        Parameters
-        ----------
-        x : 입력 데이터
-        t : 정답 레이블
 
-        Returns
-        -------
-        각 층의 기울기를 담은 딕셔너리(dictionary) 변수
-            grads['W1']、grads['W2']、... 각 층의 가중치
-            grads['b1']、grads['b2']、... 각 층의 편향
-        """
-        loss_W = lambda W: self.loss(x, t)
 
-        grads = {}
-        for idx in range(1, self.hidden_layer_num + 2):
-            grads['W' + str(idx)] = numerical_gradient(loss_W, self.params['W' + str(idx)])
-            grads['b' + str(idx)] = numerical_gradient(loss_W, self.params['b' + str(idx)])
-
-        return grads
-
+    # 손실함수의 기울기 계산(미분)
+    # 오차역전파를 통해 각 가중치 매개변수에 대한 미분값 계산
+    # x: 입력 데이터
+    # t: 정답 레이블
     def gradient(self, x, t):
-        """기울기를 구한다(오차역전파법).
-
-        Parameters
-        ----------
-        x : 입력 데이터
-        t : 정답 레이블
-
-        Returns
-        -------
-        각 층의 기울기를 담은 딕셔너리(dictionary) 변수
-            grads['W1']、grads['W2']、... 각 층의 가중치
-            grads['b1']、grads['b2']、... 각 층의 편향
-        """
-        # forward
+        ########################################################################
+        # Forward - 순전파를 통해 손실을 구한다.(CEE)
+        # 손실값은 SoftmaxWithLoss 계층 객체에 저장
+        ########################################################################
         self.loss(x, t)
 
-        # backward
-        dout = 1
-        dout = self.last_layer.backward(dout)
 
+        ########################################################################
+        # Backward - 각 계층의 가중치의 미분값 계산
+        ########################################################################
+
+        # Softmax - Cross Entropy Error 계층의 미분값 계산
+        dout = self.last_layer.backward(1.0)
+
+        # output layer의 Affine 계층 ~ 첫번째 hidden layer 까지 미분값 계산
         layers = list(self.layers.values())
         layers.reverse()
         for layer in layers:
             dout = layer.backward(dout)
 
-        # 결과 저장
+        # 미분결과(기울기) 저장
         grads = {}
-        for idx in range(1, self.hidden_layer_num + 2):
-            grads['W' + str(idx)] = self.layers['Affine' + str(idx)].dW + self.weight_decay_lambda * self.layers[
-                'Affine' + str(idx)].W
-            grads['b' + str(idx)] = self.layers['Affine' + str(idx)].db
+        for i in range(1, self.hidden_layer_num + 2): # 첫번째 hidden layer ~ output layer
+            grads['W' + str(i)] = self.layers['Affine' + str(i)].dW #+ self.weight_decay_lambda * self.layers['Affine' + str(i)].W
+            grads['b' + str(i)] = self.layers['Affine' + str(i)].db
 
         return grads
+
+
+
+    # 학습
+    def train(self, x, t):
+        # 기울기 계산
+        grads = self.gradient(x, t)
+
+        # 가중치 매개변수 갱신
+        self.optimizer.update(self.params, grads)
+
+
+
+    # 손실함수의 기울기 계산
+    # 손실함수를 가중치에 대해서 수치 미분
+    # 계산 시간이 오래 걸리기 때문에 실제 기울기 계산이 아닌 오차역전파에 의해 계산한 기울기 검증에 사용
+    # x: 입력 데이터
+    # t: 정답 레이블
+    def numerical_gradient(self, x, t):
+        loss_W = lambda W: self.loss(x, t)
+
+        grads = {}
+        for i in range(1, self.hidden_layer_num + 2):
+            grads['W' + str(i)] = func.numerical_gradient(loss_W, self.params['W' + str(i)])
+            grads['b' + str(i)] = func.numerical_gradient(loss_W, self.params['b' + str(i)])
+
+        return grads
+
+
+
+
+if __name__ == '__main__':
+    network = MultiLayerNet(input_size=784, hidden_size_list=[50, 60, 50], output_size=10)

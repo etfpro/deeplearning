@@ -76,7 +76,7 @@ def cross_entropy_error(y, t):
 
     # np.arange(batch_size): [0, 1, ..., 훈련데이터의 개수 - 1]의 numpy 배열(1차원) 생성
     # ==> y[[0, 1, ..., batch_size - 1], t]: 출력 데이터에서 정답 부분만 추출하여 배열(1차원) 생성
-    return -np.sum(np.log(y[np.arange(batch_size), t])) / batch_size
+    return -np.sum(np.log(y[np.arange(batch_size), t] + 1e-7)) / batch_size
 
 
 
