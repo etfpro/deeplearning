@@ -16,7 +16,7 @@ from util import smooth_curve
 (train_data, train_label), (test_data, test_label) = load_mnist()
 
 # 하이퍼파라메터
-iters_num = 5000 # SGD 반복회수
+iters_num = 2000 # SGD 반복회수
 train_size = train_data.shape[0] # 훈련데이터 개수
 batch_size = 128 # 미니배치 크기
 learning_rate = 0.01 # 학습률
