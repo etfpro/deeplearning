@@ -17,7 +17,7 @@ class MultiLayerNet:
     #                   'relu'나 'he'로 지정하면 'He 초깃값'으로 설정
     #                   'sigmoid'나 'xavier'로 지정하면 'Xavier 초깃값'으로 설정
     # weight_decay_lambda : 가중치 감소(L2 법칙)의 세기
-    def __init__(self, input_size, hidden_size_list, output_size, optimizer=SGD(),
+    def __init__(self, input_size, hidden_size_list, output_size, optimizer=Adam(),
                  activation='relu', weight_init_std='relu'):
 
         # hidden layer의 수

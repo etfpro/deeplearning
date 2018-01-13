@@ -21,7 +21,7 @@ class SGD:
 # v = momentum * v + learing_rate * 기울기, W = W - v (v 초기값은 0)
 # momentum이 1 미만이기 때문에 학습이 진행될수록 과거의 갱신량은 점점 작아지게 된다
 class Momentum:
-    def __init__(self, lr=00.1, momentum=0.9):
+    def __init__(self, lr=0.01, momentum=0.9):
         self.lr = lr
         self.momentum = momentum
         self.v = None
