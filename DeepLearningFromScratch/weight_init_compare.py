@@ -19,15 +19,15 @@ max_iterations = 2000
 weight_init_types = {'std(0.01)': 0.01, 'Xavier': 'sigmoid', 'He': 'relu'}
 markers = {'std(0.01)': 'o', 'Xavier': 's', 'He': 'D'}
 optimizer = SGD()
-optimizer = Momentum()
-optimizer = AdaGrad()
-optimizer = Adam()
+#optimizer = Momentum()
+#optimizer = AdaGrad()
+#optimizer = Adam()
 
 networks = {}
 train_loss = {}
 for key, weight_type in weight_init_types.items():
     networks[key] = MultiLayerNet(input_size=784, hidden_size_list=[100, 100, 100, 100, 100, 100, 100, 100, 100, 100],
-                                  output_size=10, weight_init_std=weight_type, optimizer=optimizer)
+                                  output_size=10, weight_init_std=weight_type, optimizer=optimizer, use_batchnorm=True)
     train_loss[key] = []
 
 
@@ -47,7 +47,7 @@ for i in range(max_iterations):
     if i % 100 == 0:
         print("===========" + "iteration:" + str(i) + "===========")
         for key in weight_init_types:
-            print(key + ":" + str(networks[key].loss(x_batch, t_batch)))
+            print(key + ":" + str(networks[key].loss(x_batch, t_batch, True)))
 
 
 # 3. 그래프 그리기==========

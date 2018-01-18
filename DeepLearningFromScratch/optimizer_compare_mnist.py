@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from mnist import load_mnist
 from optimizer import *
 from multiLayerNet import MultiLayerNet
-
+from util import smooth_curve
 
 # 0. MNIST 데이터 읽기==========
 (x_train, t_train), (x_test, t_test) = load_mnist(normalize=True)
@@ -16,7 +16,7 @@ optimizers = {}
 optimizers['SGD'] = SGD()
 optimizers['Momentum'] = Momentum()
 optimizers['AdaGrad'] = AdaGrad()
-optimizers['RMSprop'] = RMSProp()
+#optimizers['RMSProp'] = RMSProp()
 optimizers['Adam'] = Adam()
 
 networks = {}
@@ -34,16 +34,14 @@ for i in range(max_iterations):
     t_batch = t_train[batch_mask]
 
     for key in optimizers.keys():
-        grads = networks[key].gradient(x_batch, t_batch)
-        optimizers[key].update(networks[key].params, grads)
-
-        loss = networks[key].loss(x_batch, t_batch)
+        networks[key].train(x_batch, t_batch)
+        loss = networks[key].lossValue;
         train_loss[key].append(loss)
 
     if i % 100 == 0:
         print("===========" + "iteration:" + str(i) + "===========")
         for key in optimizers.keys():
-            loss = networks[key].loss(x_batch, t_batch)
+            loss = networks[key].loss(x_batch, t_batch, True)
             print(key + ":" + str(loss))
 
 # 3. 그래프 그리기==========

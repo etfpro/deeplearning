@@ -17,12 +17,26 @@ class MultiLayerNet:
     #                   'relu'나 'he'로 지정하면 'He 초깃값'으로 설정
     #                   'sigmoid'나 'xavier'로 지정하면 'Xavier 초깃값'으로 설정
     # weight_decay_lambda : 가중치 감소(L2 법칙)의 세기
+    # use_batchnorm : 배치 정규화 사용 여부
     def __init__(self, input_size, hidden_size_list, output_size, optimizer=Adam(),
-                 activation='relu', weight_init_std='relu'):
+                 activation='relu', weight_init_std='relu', use_batchnorm=True):
+
+        ########################################################################
+        # 각종 속성
+        ########################################################################
+        #가중치 갱신 optimizer
+        self.optimizer = optimizer
+
+        # 손실값
+        self.lossValue = 0
+
+        # 배치정규화 사용 여부
+        self.use_batchnorm = use_batchnorm
 
         # hidden layer의 수
         self.hidden_layer_num = len(hidden_size_list)
         #self.weight_decay_lambda = weight_decay_lambda
+
 
         ########################################################################
         # 신경망의 매개변수(가중치, 편차) 초기화
@@ -32,30 +46,10 @@ class MultiLayerNet:
 
 
         ########################################################################
-        # 각 계층 생성
+        # 각 계층 생성 및 초기화
         ########################################################################
         self.layers = OrderedDict()
-
-        # hidden layers
-        activation_layer = {'sigmoid': Sigmoid, 'relu': Relu} # 활성화 계층
-        for i in range(1, self.hidden_layer_num + 1):
-            self.layers['Affine' + str(i)] = Affine(self.params['W' + str(i)], self.params['b' + str(i)])
-            self.layers['Activation' + str(i)] = activation_layer[activation]()
-
-        # output layer
-        i = self.hidden_layer_num + 1
-        self.layers['Affine' + str(i)] = Affine(self.params['W' + str(i)], self.params['b' + str(i)])
-        self.last_layer = SoftmaxWithLoss() # Softmax와 오차함수 계층은 실제 추론에서는 사용하지 않기 때문에 별도의 변수에 저장
-
-
-        ########################################################################
-        # 기타
-        ########################################################################
-        #가중치 갱신 optimizer
-        self.optimizer = optimizer
-
-        # 손실값
-        self.lossValue = 0
+        self.__init_layers(activation, hidden_size_list)
 
 
     # 가중치 초기화
@@ -78,12 +72,47 @@ class MultiLayerNet:
             self.params['b' + str(i)] = np.zeros(all_size_list[i])
 
 
+    # 각 계층 생성 및 초기화
+    def __init_layers(self, activation, hidden_size_list):
+        ########################################################################
+        # hidden layers
+        ########################################################################
+        activation_layer = {'sigmoid': Sigmoid, 'relu': Relu} # 활성화 계층
+        for i in range(1, self.hidden_layer_num + 1):
+            # Affine layer
+            self.layers['Affine' + str(i)] = Affine(self.params['W' + str(i)], self.params['b' + str(i)])
+
+            # Batch Normalization Layer
+            if self.use_batchnorm:
+                self.params['gamma' + str(i)] = np.ones(hidden_size_list[i - 1]) # Scale factor (초기값 1)
+                self.params['beta' + str(i)] = np.zeros(hidden_size_list[i - 1]) # Shift factor (초기값 0)
+                self.layers['BatchNorm' + str(i)] = BatchNormalization(self.params['gamma' + str(i)], self.params['beta' + str(i)])
+
+            # Activation Layer
+            self.layers['Activation' + str(i)] = activation_layer[activation]()
+
+            # Dropout Layer
+            #if self.use_dropout:
+            #    self.layers['Dropout' + str(i)] = Dropout(dropout_ration)
+
+
+        ########################################################################
+        # output layer
+        ########################################################################
+        i = self.hidden_layer_num + 1
+        self.layers['Affine' + str(i)] = Affine(self.params['W' + str(i)], self.params['b' + str(i)])
+        self.last_layer = SoftmaxWithLoss() # Softmax와 오차함수 계층은 실제 추론에서는 사용하지 않기 때문에 별도의 변수에 저장
+
+
 
     # 추론(예측)
     # hidden layer ~ output layer의 Affine 계층까지
-    def predict(self, x):
-        for layer in self.layers.values():
-            x = layer.forward(x)
+    def predict(self, x, train_flg):
+        for key, layer in self.layers.items():
+            if "Dropout" in key or "BatchNorm" in key:
+                x = layer.forward(x, train_flg)
+            else:
+                x = layer.forward(x)
 
         return x
 
@@ -92,9 +121,9 @@ class MultiLayerNet:
     # 손실함수(CEE)
     # x: 입력 데이터
     # t: 정답 레이블
-    def loss(self, x, t):
+    def loss(self, x, t, train_flg):
         # hidden layer ~ output layer의 Affine 계층
-        a = self.predict(x)
+        a = self.predict(x, train_flg)
 
         # Softmax - Cross Entropy Error 계층
         self.lossValue = self.last_layer.forward(a, t)
@@ -112,7 +141,7 @@ class MultiLayerNet:
     # 정확도 측정
     def accuracy(self, x, t):
         # 출력값 중 가장 큰 값의 인덱스 추출
-        y = self.predict(x)
+        y = self.predict(x, train_flg=False)
         y = np.argmax(y, axis=1)
 
         # 정답 레이블이 one-hot-encoding 인 경우 정답 인덱스 추출
@@ -132,13 +161,12 @@ class MultiLayerNet:
         # Forward - 순전파를 통해 손실을 구한다.(CEE)
         # 손실값은 SoftmaxWithLoss 계층 객체에 저장
         ########################################################################
-        self.loss(x, t)
+        self.loss(x, t, train_flg=True)
 
 
         ########################################################################
         # Backward - 각 계층의 가중치의 미분값 계산
         ########################################################################
-
         # Softmax - Cross Entropy Error 계층의 미분값 계산
         dout = self.last_layer.backward(1.0)
 
@@ -153,6 +181,10 @@ class MultiLayerNet:
         for i in range(1, self.hidden_layer_num + 2): # 첫번째 hidden layer ~ output layer
             grads['W' + str(i)] = self.layers['Affine' + str(i)].dW #+ self.weight_decay_lambda * self.layers['Affine' + str(i)].W
             grads['b' + str(i)] = self.layers['Affine' + str(i)].db
+
+            if self.use_batchnorm and i != self.hidden_layer_num + 1:
+                grads['gamma' + str(i)] = self.layers['BatchNorm' + str(i)].dgamma
+                grads['beta' + str(i)] = self.layers['BatchNorm' + str(i)].dbeta
 
         return grads
 
@@ -174,12 +206,17 @@ class MultiLayerNet:
     # x: 입력 데이터
     # t: 정답 레이블
     def numerical_gradient(self, x, t):
-        loss_W = lambda W: self.loss(x, t)
+        loss_W = lambda W: self.loss(x, t, train_flg=True)
 
         grads = {}
         for i in range(1, self.hidden_layer_num + 2):
             grads['W' + str(i)] = func.numerical_gradient(loss_W, self.params['W' + str(i)])
             grads['b' + str(i)] = func.numerical_gradient(loss_W, self.params['b' + str(i)])
+
+            # 배치 정규화 사용 시 (마지막 출력층에는 배치 정규화 계층이 존재하지 않음)
+            if self.use_batchnorm and i != self.hidden_layer_num + 1:
+                grads['gamma' + str(i)] = func.numerical_gradient(loss_W, self.params['gamma' + str(i)])
+                grads['beta' + str(i)] = func.numerical_gradient(loss_W, self.params['beta' + str(i)])
 
         return grads
 
@@ -187,4 +224,4 @@ class MultiLayerNet:
 
 
 if __name__ == '__main__':
-    network = MultiLayerNet(input_size=784, hidden_size_list=[50, 60, 50], output_size=10)
+    pass

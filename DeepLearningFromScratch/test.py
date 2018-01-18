@@ -1,48 +1,90 @@
-from mnist import load_mnist
 import numpy as np
-from twoLayerNet import TwoLayerNet
 import matplotlib.pyplot as plt
-from functions import *
+from mnist import load_mnist
+from multiLayerNet import *
+from optimizer import *
 
 
-input_data = np.random.randn(1000, 100)
-node_num = 100 # 은칙층 노드 수
-hidden_layer_size = 10
-
-# 활성화값
-activations = {}
-
-x = input_data
-for i in range(hidden_layer_size):
-
-    # 이전 계층 출력을 입력으로 사용
-    if i != 0:
-        x = activations[i-1]
-
-    # 가중치 초깃값을 다양하게 바꿔가며 실험해보자！
-    w = np.random.randn(node_num, node_num) * 1
-    #w = np.random.randn(node_num, node_num) * 0.01
-    # w = np.random.randn(node_num, node_num) * np.sqrt(1.0 / node_num)
-    #w = np.random.randn(node_num, node_num) * np.sqrt(2.0 / node_num)
-
-    # Affine
-    a = np.dot(x, w)
-
-    # 활성화 함수도 바꿔가며 실험해보자！
-    z = sigmoid(a)
-    #z = relu(a)
-    #z = np.tanh(a)
-
-    activations[i] = z
 
 
-# 히스토그램 그리기
-for i, a in activations.items():
-    plt.subplot(1, len(activations), i + 1)
-    plt.title(str(i + 1) + "-layer")
-    if i != 0:
-        plt.yticks([], [])
-    # plt.xlim(0.1, 1)
-    # plt.ylim(0, 7000)
-    plt.hist(a.flatten(), 30, range=(0, 1))
+(x_train, t_train), (x_test, t_test) = load_mnist(normalize=True)
+
+
+################################################################################
+# Batch Normalization Test
+################################################################################
+
+
+# 학습 데이터를 1000개만 사용
+x_train = x_train[:1000]
+t_train = t_train[:1000]
+
+
+train_size = x_train.shape[0]
+batch_size = 100
+max_epochs = 20
+
+
+def __train_batchnorm(weight_init_std):
+    bn_network = MultiLayerNet(input_size=784, hidden_size_list=[100, 100, 100, 100, 100], output_size=10,
+                                     weight_init_std=weight_init_std, use_batchnorm=True, optimizer=SGD())
+
+    network = MultiLayerNet(input_size=784, hidden_size_list=[100, 100, 100, 100, 100], output_size=10,
+                                  weight_init_std=weight_init_std, optimizer=SGD(), use_batchnorm=False)
+    train_acc_list = []
+    bn_train_acc_list = []
+
+    iter_per_epoch = max(train_size / batch_size, 1)
+
+    epoch_cnt = 0
+    for i in range(1000000000):
+        batch_mask = np.random.choice(train_size, batch_size)
+        x_batch = x_train[batch_mask]
+        t_batch = t_train[batch_mask]
+
+        for _network in (bn_network, network):
+            _network.train(x_batch, t_batch)
+
+        if i % iter_per_epoch == 0:
+            train_acc = network.accuracy(x_train, t_train)
+            bn_train_acc = bn_network.accuracy(x_train, t_train)
+            train_acc_list.append(train_acc)
+            bn_train_acc_list.append(bn_train_acc)
+            print("epoch:" + str(epoch_cnt) + " | " + str(train_acc) + " - " + str(bn_train_acc))
+            epoch_cnt += 1
+            if epoch_cnt >= max_epochs:
+                break
+
+    return train_acc_list, bn_train_acc_list
+
+
+# 그래프 그리기==========
+
+weight_scale_list = np.logspace(0, -4, num=16)
+x = np.arange(max_epochs)
+
+for i, w in enumerate(weight_scale_list):
+    print("============== " + str(i + 1) + "/16" + " ==============")
+    train_acc_list, bn_train_acc_list = __train_batchnorm(w)
+
+    plt.subplot(4, 4, i + 1)
+    plt.title("W:" + str(w))
+    if i == 15:
+        plt.plot(x, bn_train_acc_list, label='Batch Normalization', markevery=2)
+        plt.plot(x, train_acc_list, linestyle="--", label='Normal(without BatchNorm)', markevery=2)
+    else:
+        plt.plot(x, bn_train_acc_list, markevery=2)
+        plt.plot(x, train_acc_list, linestyle="--", markevery=2)
+
+    plt.ylim(0, 1.0)
+    if i % 4:
+        plt.yticks([])
+    else:
+        plt.ylabel("accuracy")
+    if i < 12:
+        plt.xticks([])
+    else:
+        plt.xlabel("epochs")
+    plt.legend(loc='lower right')
+
 plt.show()
