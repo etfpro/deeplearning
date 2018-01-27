@@ -230,7 +230,6 @@ class Sigmoid:
 # 분류 신경망의 마지막 계층으로 학습시에만 사용된다.
 class SoftmaxWithLoss:
     def __init__(self):
-        self.loss = None # 손실
         self.y = None # Softamx 출력
         self.t = None # 정답 레이블
 
@@ -239,8 +238,7 @@ class SoftmaxWithLoss:
     def forward(self, x, t):
         self.t = t
         self.y = func.softmax(x)
-        self.loss = func.cross_entropy_error(self.y, self.t)
-        return self.loss
+        return func.cross_entropy_error(self.y, self.t)
 
 
     # 입력 - dout은 마지막 계층이기 때문에 1

@@ -19,7 +19,8 @@ class MultiLayerNet:
     # weight_decay_lambda : 가중치 감소(L2 법칙)의 세기
     # use_batchnorm : 배치 정규화 사용 여부
     def __init__(self, input_size, hidden_size_list, output_size, optimizer=Adam(),
-                 activation='relu', weight_init_std='relu', use_batchnorm=True):
+                 activation='relu', weight_init_std='relu', use_batchnorm=True,
+                 weight_decay_lambda=0):
 
         ########################################################################
         # 각종 속성
@@ -33,9 +34,11 @@ class MultiLayerNet:
         # 배치정규화 사용 여부
         self.use_batchnorm = use_batchnorm
 
+        # 가중치 감소 비율
+        self.weight_decay_lambda = weight_decay_lambda
+
         # hidden layer의 수
         self.hidden_layer_num = len(hidden_size_list)
-        #self.weight_decay_lambda = weight_decay_lambda
 
 
         ########################################################################
@@ -125,16 +128,17 @@ class MultiLayerNet:
         # hidden layer ~ output layer의 Affine 계층
         a = self.predict(x, train_flg)
 
+        # 가중치감소 처리(가중치감소값 = 모든 가중치의 제곱 합 * 람다 / 2)
+        weight_decay = 0
+        if (self.weight_decay_lambda > 0):
+            weight_square_sum = 0
+            for i in range(1, self.hidden_layer_num + 2):
+                W = self.params['W' + str(i)]
+                weight_square_sum += np.sum(W ** 2)
+            weight_decay = 0.5 * self.weight_decay_lambda *  weight_square_sum
+
         # Softmax - Cross Entropy Error 계층
-        self.lossValue = self.last_layer.forward(a, t)
-        return self.lossValue
-
-        #weight_decay = 0
-        #for idx in range(1, self.hidden_layer_num + 2):
-        #    W = self.params['W' + str(idx)]
-        #    weight_decay += 0.5 * self.weight_decay_lambda * np.sum(W ** 2)
-
-        #return self.last_layer.forward(y, t) + weight_decay
+        self.lossValue = self.last_layer.forward(a, t) + weight_decay
 
 
 
@@ -179,7 +183,8 @@ class MultiLayerNet:
         # 미분결과(기울기) 저장
         grads = {}
         for i in range(1, self.hidden_layer_num + 2): # 첫번째 hidden layer ~ output layer
-            grads['W' + str(i)] = self.layers['Affine' + str(i)].dW #+ self.weight_decay_lambda * self.layers['Affine' + str(i)].W
+            grads['W' + str(i)] = self.layers['Affine' + str(i)].dW + \
+                                  self.weight_decay_lambda * self.layers['Affine' + str(i)].W # 가중치감소 미분값(람다 * W)을 더한다
             grads['b' + str(i)] = self.layers['Affine' + str(i)].db
 
             if self.use_batchnorm and i != self.hidden_layer_num + 1:
