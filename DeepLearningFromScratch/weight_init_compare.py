@@ -1,10 +1,8 @@
 # coding: utf-8
-import numpy as np
-import matplotlib.pyplot as plt
-from mnist import load_mnist
-from util import smooth_curve
-from multiLayerNet import MultiLayerNet
-from optimizer import *
+from common.mnist import load_mnist
+from common.util import smooth_curve
+from common.multiLayerNet import MultiLayerNet
+from common.optimizer import *
 
 
 # 0. MNIST 데이터 읽기==========

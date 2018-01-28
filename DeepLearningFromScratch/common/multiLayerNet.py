@@ -1,9 +1,8 @@
 # multiLayerNet.py
-import numpy as np
-import functions as func
+from common.layers import *
+from common.optimizer import *
 from collections import OrderedDict
-from layers import *
-from optimizer import *
+
 
 
 # Fully Connected 심층 신경망
@@ -16,11 +15,12 @@ class MultiLayerNet:
     # weight_init_std : 가중치의 표준편차 지정（e.g. 0.01）
     #                   'relu'나 'he'로 지정하면 'He 초깃값'으로 설정
     #                   'sigmoid'나 'xavier'로 지정하면 'Xavier 초깃값'으로 설정
-    # weight_decay_lambda : 가중치 감소(L2 법칙)의 세기
     # use_batchnorm : 배치 정규화 사용 여부
+    # weight_decay_lambda : 가중치 감소(L2 법칙)의 세기, 0이면 가중치 감소를 수행하지 않음
+    # dropout_ration : dropout 비율, 0이면 dropout을 수행하지 않음
     def __init__(self, input_size, hidden_size_list, output_size, optimizer=Adam(),
                  activation='relu', weight_init_std='relu', use_batchnorm=True,
-                 weight_decay_lambda=0):
+                 weight_decay_lambda=0, dropout_ratio=0):
 
         ########################################################################
         # 각종 속성
@@ -52,7 +52,7 @@ class MultiLayerNet:
         # 각 계층 생성 및 초기화
         ########################################################################
         self.layers = OrderedDict()
-        self.__init_layers(activation, hidden_size_list)
+        self.__init_layers(activation, hidden_size_list, dropout_ratio)
 
 
     # 가중치 초기화
@@ -76,7 +76,7 @@ class MultiLayerNet:
 
 
     # 각 계층 생성 및 초기화
-    def __init_layers(self, activation, hidden_size_list):
+    def __init_layers(self, activation, hidden_size_list, dropout_ratio):
         ########################################################################
         # hidden layers
         ########################################################################
@@ -95,8 +95,8 @@ class MultiLayerNet:
             self.layers['Activation' + str(i)] = activation_layer[activation]()
 
             # Dropout Layer
-            #if self.use_dropout:
-            #    self.layers['Dropout' + str(i)] = Dropout(dropout_ration)
+            if dropout_ratio > 0:
+                self.layers['Dropout' + str(i)] = Dropout(dropout_ratio)
 
 
         ########################################################################

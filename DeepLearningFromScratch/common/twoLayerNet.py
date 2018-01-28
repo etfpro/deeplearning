@@ -1,7 +1,5 @@
 #twoLayerNet.py
 
-import numpy as np
-import functions as func
 from layers import *
 from collections import OrderedDict
 from optimizer import SGD

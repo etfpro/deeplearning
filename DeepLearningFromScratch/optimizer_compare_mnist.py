@@ -1,8 +1,7 @@
-import matplotlib.pyplot as plt
-from mnist import load_mnist
-from optimizer import *
-from multiLayerNet import MultiLayerNet
-from util import smooth_curve
+from common.mnist import load_mnist
+from common.optimizer import *
+from common.multiLayerNet import MultiLayerNet
+from common.util import smooth_curve
 
 # 0. MNIST 데이터 읽기==========
 (x_train, t_train), (x_test, t_test) = load_mnist(normalize=True)

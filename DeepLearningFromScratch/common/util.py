@@ -14,23 +14,21 @@ def smooth_curve(x):
     return y[5:len(y)-5]
 
 
-def shuffle_dataset(x, t):
-    """데이터셋을 뒤섞는다.
 
-    Parameters
-    ----------
-    x : 훈련 데이터
-    t : 정답 레이블
-    
-    Returns
-    -------
-    x, t : 뒤섞은 훈련 데이터와 정답 레이블
-    """
+# 데이터를 뒤섞는다.
+# x - 훈련데이터
+# t - 훈련데이터 레이블
+def shuffle_dataset(x, t):
+    # 훈련 데이터의 수까지의 인덱스 배열을 생성 후 뒤섞는다.
     permutation = np.random.permutation(x.shape[0])
+
+    # 입력데이터가 2차원인 경우와 4차원 텐서(합성곱)인 경우 구분
     x = x[permutation,:] if x.ndim == 2 else x[permutation,:,:,:]
     t = t[permutation]
 
     return x, t
+
+
 
 def conv_output_size(input_size, filter_size, stride=1, pad=0):
     return (input_size + 2*pad - filter_size) / stride + 1
