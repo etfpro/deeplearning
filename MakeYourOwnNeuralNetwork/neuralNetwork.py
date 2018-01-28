@@ -18,27 +18,48 @@ class neuralNetwork:
         # 학습률
         self.lr = learningrate
 
-        # 은닉층 가중치
+        # 은닉층 가중치 초기화 (Xavier 초기값)
         self.hidden_weights = np.random.normal(0.0, self.inodes ** -0.5, (self.inodes, self.hnodes))
 
-        # 출력층 가중치
+        # 은닉층 가중치 초기화 (Xavier 초기값)
         self.final_weights = np.random.normal(0.0, self.hnodes ** -0.5, (self.hnodes, self.fnodes))
-
-        # 활성화 함수
-        self.activation_function = self.sigmoid
 
         # 디버그모드
         self.debugMode = debugMode
 
 
+    # 기울기 계산 (미분)
+    def numerical_gradient(self, f, x):
+        h = 1e-4  # 0.0001
+        grad = np.zeros_like(x)  # x의 형상가 같은 배열 생성
+
+        # x의 각 원소에 대한 편미분
+        it = np.nditer(x, flags=['multi_index'], op_flags=['readwrite'])
+        while not it.finished:
+            idx = it.multi_index
+            x_org = x[idx]
+
+            # f(x+h) 계산
+            x[idx] = x_org + h
+            fxh1 = f(x)  # f(x+h)
+
+            # f(x-h) 계산
+            x[idx] = x_org - h
+            fxh2 = f(x)
+
+            # 미분
+            grad[idx] = (fxh1 - fxh2) / (2 * h)
+
+            x[idx] = x_org  # 값 복원
+            it.iternext()
+
+        return grad
+
 
     # 가중치 업데이트
-    def updateHiddenWeights(self, weights, errors, inputs, outputs):
-        deltaW = self.lr * -np.dot(inputs.T, errors * outputs * (1 - outputs))
-        weights -= deltaW
-
-    def updateOutputWeights(self, weights, errors, inputs, outputs):
-        deltaW = self.lr * -np.dot(inputs.T, errors * outputs * (1 - outputs))
+    def updateWeights(self, costFunc, weights):
+        #deltaW = self.lr * -np.dot(inputs.T, errors * outputs * (1 - outputs))
+        deltaW = self.lr * self.numerical_gradient(costFunc, weights)
         weights -= deltaW
 
 
@@ -56,10 +77,10 @@ class neuralNetwork:
         ########################################################################
 
         # 은닉층
-        hidden_outputs = self.activation_function(np.dot(inputs, self.hidden_weights))
+        hidden_outputs = self.sigmoid(np.dot(inputs, self.hidden_weights))
 
         # 출력층
-        final_outputs = self.activation_function(np.dot(hidden_outputs, self.final_weights))
+        final_outputs = self.softmax(np.dot(hidden_outputs, self.final_weights))
         if self.debugMode:
             print(">> Final Outputs(training...) <<\n", final_outputs)
 
@@ -86,14 +107,16 @@ class neuralNetwork:
         # 출력층 가중치 업데이트
         #if self.debugMode:
         #    print(">> Final Weiths Before Update(training...) <<\n", self.final_weights)
-        self.updateOutputWeights(self.final_weights, final_errors, hidden_outputs, final_outputs)
+        #self.updateOutputWeights(self.final_weights, final_errors, hidden_outputs, final_outputs)
+        self.updateWeights(final_errors, self.final_weights)
         #if self.debugMode:
         #    print(">> Final Weiths After Update(training...) <<\n", self.final_weights)
 
         # 은닉층 가중치 업데이트
         #if self.debugMode:
         #    print(">> Hidden Weiths Before Update(training...) <<\n", self.hidden_weights)
-        self.updateHiddenWeights(self.hidden_weights, hidden_errors, inputs, hidden_outputs)
+        #self.updateHiddenWeights(self.hidden_weights, hidden_errors, inputs, hidden_outputs)
+        self.updateWeights(self.sigmoid, self.hidden_weights)
         #if self.debugMode:
         #    print(">> Hidden Weiths After Update(training...) <<\n", self.hidden_weights)
 

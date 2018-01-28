@@ -1,8 +1,8 @@
-# Layers.py
+# layers.py
 # 역전파 시 해당 함수를 국소적 미분한 값을 곱한다.
 
 import numpy as np
-import functions as func
+import common.functions as func
 
 
 # Affine 변환 계층 (X·W + b)
@@ -174,6 +174,7 @@ class BatchNormalization:
 
 
 
+
 # ReLU 활성화 함수 계층
 # 은닉계층의 활성화 함수로 주로 사용
 class Relu:
@@ -193,12 +194,46 @@ class Relu:
 
     # ReLU 함수 미분
     # 0보다 작거나 같은 경우 0, 0보다 큰 경우 1
-    # 입력 - dout은 다음 계층(Affine 계층)의 미분 값
+    # 입력 - dout은 다음 계층(Dropout 또는 Affine 계층)의 미분 값
     # 출력 - 이전 계충(Affine 계증)으로 전파할 값
     def backward(self, dout):
         dout[self.mask] = 0 # 0 이하인 것들에 대해 0으로 변경
         dx = dout
         return dx
+
+
+
+
+# Dropout 계층
+# 은닉층의 활성화함수 계층(ReLU) 다음에 위치
+class Dropout:
+    def __init__(self, dropout_ratio=0.5):
+
+        # dropout 비율
+        # 0이면 dropout하지 않음
+        self.dropout_ratio = dropout_ratio
+
+        # dropout하지 않을 노드를 선택할 mask
+        # True인 노드는 dropout하지 않고, False인 노드는 dropout한다.
+        self.mask = None
+
+
+    # 입력 - x는 Activation(ReLU) 계층의 출력값
+    def forward(self, x, train_flg):
+        if train_flg: # 훈련 시에는 무작위로 dropout_ratio 만큼의 노드의 출력값을 0으로 하여 통과시키지 않음
+            self.mask = np.random.rand(*x.shape) > self.dropout_ratio
+            return x * self.mask
+        else: # 테스트 시에는 각 노드의 출력에 훈련 때 삭제한 비율(dropout 비율)만큼 노드의 값을 줄인다.
+            #return x * (1.0 - self.dropout_ratio)
+            return x
+
+
+    # 역전파 시에도 순전파 때 dropout된 노드의 값을 전달하지 않는다.
+    # 입력 - dout은 다음 계층(Affine 계층)의 미분 값
+    # 출력 - 이전 계충(ReLU 계증)으로 전파할 값
+    def backward(self, dout):
+        return dout * self.mask
+
 
 
 

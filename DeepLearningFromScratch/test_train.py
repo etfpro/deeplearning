@@ -1,12 +1,8 @@
-import numpy as np
-from mnist import load_mnist
-from twoLayerNet import TwoLayerNet
-from multiLayerNet import MultiLayerNet
-import time
-from optimizer import *
+from common.mnist import load_mnist
+from common.multiLayerNet import MultiLayerNet
+from common.optimizer import *
 import matplotlib.pyplot as plt
-from collections import OrderedDict
-from util import smooth_curve
+from common.util import smooth_curve
 
 
 

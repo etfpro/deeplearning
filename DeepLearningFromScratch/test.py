@@ -1,8 +1,6 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from mnist import load_mnist
-from multiLayerNet import *
-from optimizer import *
+from common.mnist import load_mnist
+from common.multiLayerNet import *
+from common.optimizer import *
 
 
 

@@ -5,8 +5,7 @@ import gzip
 import pickle
 import os
 import numpy as np
-import functions as func
-
+import common.functions as func
 
 url_base = 'http://yann.lecun.com/exdb/mnist/'
 key_file = {
@@ -16,7 +15,7 @@ key_file = {
     'test_label':'t10k-labels-idx1-ubyte.gz'
 }
 
-dataset_dir = os.path.dirname(os.path.abspath(__file__)) + "/../dataset"
+dataset_dir = os.path.dirname(os.path.abspath(__file__)) + "/../../dataset"
 pickle_path = dataset_dir + "/mnist.pkl"
 
 train_num = 60000
