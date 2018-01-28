@@ -16,7 +16,7 @@ train_label = train_label[:300]
 network = MultiLayerNet(input_size=784, hidden_size_list=[100, 100, 100, 100, 100, 100], output_size=10,
                         optimizer=Adam(), use_batchnorm=True, weight_decay_lambda=0, dropout_ratio=-0)
 
-trainer = Trainer(train_data, train_label, test_data, test_label, network, epochs=201, verbose=True)
+trainer = Trainer(network, train_data, train_label, test_data, test_label, epochs=201, verbose=True)
 trainer.train()
 
 train_acc_list, test_acc_list = trainer.train_acc_list, trainer.test_acc_list

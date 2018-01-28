@@ -3,16 +3,16 @@ from common.optimizer import *
 
 # 신경망 훈련을 대신 해주는 클래스
 class Trainer:
+    # network: 신경망 클래스
     # x_train: 훈련 데이터
     # t_train: 훈련 데이터의 정답
     # x_test: 테스트 데이터
     # t_test: 테스트 데이터 정답
-    # network: 신경망 클래스
     # epoch: 주기
     # mini_batch_size: 미니배치 크기
     # evaluate_sample_num_per_epoch
     # verbose: 훈련 결과를 화면에 표시할지 여부
-    def __init__(self, x_train, t_train, x_test, t_test, network,
+    def __init__(self, network, x_train, t_train, x_test, t_test,
                  epochs=20, batch_size=100,
                  evaluate_sample_num_per_epoch=None, verbose=True):
         self.x_train = x_train
