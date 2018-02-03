@@ -10,7 +10,7 @@ class Trainer:
     # t_test: 테스트 데이터 정답
     # epoch: 주기
     # mini_batch_size: 미니배치 크기
-    # evaluate_sample_num_per_epoch
+    # evaluate_sample_num_per_epoch: ?
     # verbose: 훈련 결과를 화면에 표시할지 여부
     def __init__(self, network, x_train, t_train, x_test, t_test,
                  epochs=20, batch_size=100,
@@ -34,9 +34,9 @@ class Trainer:
         # 최대 훈련 반복 회수
         self.max_iter = int(epochs * self.iter_per_epoch)
 
-        self.train_loss_list = [] # 매 훈련마다 손실값 기록
-        self.train_acc_list = [] # 매 주기마다 훈련데이터 정확도 기록
-        self.test_acc_list = [] # 매 주기마다 테스트데이터 정확도 기록
+        self.train_loss_list = [] # 매 훈련마다 손실값을 기록하는 리스트
+        self.train_acc_list = [] # 매 주기마다 훈련데이터 정확도를 기록하는 리스트
+        self.test_acc_list = [] # 매 주기마다 테스트데이터 정확도를 기록하는 리스트
 
 
 

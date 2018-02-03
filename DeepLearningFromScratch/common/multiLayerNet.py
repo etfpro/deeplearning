@@ -19,7 +19,7 @@ class MultiLayerNet:
     # weight_decay_lambda : 가중치 감소(L2 법칙)의 세기, 0이면 가중치 감소를 수행하지 않음
     # dropout_ration : dropout 비율, 0이면 dropout을 수행하지 않음
     def __init__(self, input_size, hidden_size_list, output_size, optimizer=Adam(),
-                 activation='relu', weight_init_std='relu', use_batchnorm=True,
+                 activation='relu', weight_init_std='relu', use_batchnorm=False,
                  weight_decay_lambda=0, dropout_ratio=0):
 
         ########################################################################
