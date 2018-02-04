@@ -3,6 +3,8 @@
 
 import numpy as np
 import common.functions as func
+from common.util import *
+
 
 
 # Affine 변환 계층 (X·W + b)
@@ -295,31 +297,74 @@ class SoftmaxWithLoss:
 
 
 
-class Layer:
-    def __init__(self, W, b, activation=Relu()):
-        self.affine = Affine(W, b)
-        self.activation = activation
+
+# CNN의 Convolution 게층
+class Convolution:
+
+    def __init__(self, W, b, stride=1, pad=0):
+        self.W = W # 4차원 필터(가중치) 배열(필터 개수, 채널, 필터 높이, 필터 폭)
+        self.b = b # 3차원 편향 배열(필터 개수, 1, 1), 하나의 필터에 하나의 편향
+        self.stride = stride
+        self.pad = pad
+
+        # 중간 데이터（backward 시 사용）
+        self.x = None # 입력 데이터: 4차원(데이터 수, 채널, 높이, 폭)
+        self.col_x = None # 입력 데이터를 1차원 벡터의 배열(행렬)로 풀어놓은 것
+        self.col_W = None # 편향 데이터를 1차원 벡터의 배열(행렬)로 풀어놓은 것
+
+        # 가중치(필터)와 편향에 대한 미분값(기울기)
+        self.dW = None
+        self.db = None
 
 
+
+    # x - 3차원 입력 데이터(채널, 높이, 폭)의 배열(4차원)
     def forward(self, x):
-        x = self.affine.forward(x)
-        if self.activation != None:
-            x = self.activation.forward(x)
-        return x
+        # 필터의 형상: 필터의 개수는 출력의 채널 수
+        FN, C, FH, FW = self.W.shape
+
+        # 입력의 형상
+        N, C, H, W = x.shape
+
+        # 출력의 높이, 폭 계산
+        out_h = int((H + 2 * self.pad - FH) / self.stride + 1)
+        out_w = int((W + 2 * self.pad - FW) / self.stride + 1)
+
+        # 3차원 입력 데이터(C, H, W)들을 하나의 필터의 크기(C, H, W) 만큼 잘라서 1차원 벡터의 배열(행렬)로 풀어서 변환
+        col_x = im2col(x, FH, FW, self.stride, self.pad)
+
+        # 2차원 필터(FH, FW)들을 1차원 벡터의 배열(행렬)로 풀어서 변환 후, 입력 데이터와의 내적곱을 위해 전치
+        col_W = self.W.reshape(FN, -1).T
+
+        # 가중합 계산
+        out = np.dot(col_x, col_W) + self.b
+
+        # 1차원 벡터인 하나의 출력 데이터를 3차원(FN, OH, OW)으로 복구
+        out = out.reshape(N, out_h, out_w, -1).transpose(0, 3, 1, 2)
+
+
+        # backward 시 사용을 위해 저장
+        self.x = x
+        self.col_x = col_x
+        self.col_W = col_W
+
+        return out;
+
+
 
     def backward(self, dout):
-        if self.activation != None:
-            dout = self.activation.backward(dout)
-        dout = self.affine.backward(dout)
-        return dout
+        FN, C, FH, FW = self.W.shape
+        dout = dout.transpose(0,2,3,1).reshape(-1, FN)
 
+        self.db = np.sum(dout, axis=0)
+        self.dW = np.dot(self.col.T, dout)
+        self.dW = self.dW.transpose(1, 0).reshape(FN, C, FH, FW)
 
-    def dW(self):
-        return self.affine.dW
+        dcol = np.dot(dout, self.col_W.T)
+        dx = col2im(dcol, self.x.shape, FH, FW, self.stride, self.pad)
 
+        return dx
 
-    def db(self):
-        return self.affine.db
 
 
 
