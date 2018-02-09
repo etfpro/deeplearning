@@ -17,6 +17,7 @@ fig, axes = plt.subplots(1, 3, figsize=(15, 4))
 # -3과 3 사이에 균등한 간격의 점을 1000개의 만든 후, 2차원 행렬(1000행, 1열 - feature가 1개인 1000개의 데이터)로 변환
 line = np.linspace(-3, 3, 1000).reshape(-1, 1)
 
+
 for n_neighbors, axis in zip([1, 3, 9], axes):
     reg = KNeighborsRegressor(n_neighbors=n_neighbors).fit(x_train, t_train)
     pred = reg.predict(line)
@@ -33,3 +34,4 @@ for n_neighbors, axis in zip([1, 3, 9], axes):
 axes[0].legend(["Model Prediction", "Training Data/Label", "Test Data/Label"], loc="best")
 
 plt.show()
+
