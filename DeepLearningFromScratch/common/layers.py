@@ -302,15 +302,15 @@ class SoftmaxWithLoss:
 class Convolution:
 
     def __init__(self, W, b, stride=1, pad=0):
-        self.W = W # 4차원 필터(가중치) 배열(필터 개수, 채널, 필터 높이, 필터 폭)
-        self.b = b # 3차원 편향 배열(필터 개수, 1, 1), 하나의 필터에 하나의 편향
-        self.stride = stride
-        self.pad = pad
+        self.W = W # 4차원 필터(가중치) 배열(필터 개수, 채널, 필터 높이, 필터 폭), 필터 개수 = 출력의 채널 수
+        self.b = b # 1차원 편향 벡터(필터 개수), 하나의 필터에 하나의 편향
+        self.stride = stride # 보폭
+        self.pad = pad # 패딩
 
         # 중간 데이터（backward 시 사용）
         self.x = None # 입력 데이터: 4차원(데이터 수, 채널, 높이, 폭)
         self.col_x = None # 입력 데이터를 1차원 벡터의 배열(행렬)로 풀어놓은 것
-        self.col_W = None # 편향 데이터를 1차원 벡터의 배열(행렬)로 풀어놓은 것
+        self.col_W = None # 필터 데이터를 1차원 벡터의 배열(행렬)로 풀어놓은 것
 
         # 가중치(필터)와 편향에 대한 미분값(기울기)
         self.dW = None
@@ -318,30 +318,33 @@ class Convolution:
 
 
 
-    # x - 3차원 입력 데이터(채널, 높이, 폭)의 배열(4차원)
+    # x - 4차원 입력 데이터(데이터 수, 채널, 높이, 폭)
     def forward(self, x):
-        # 필터의 형상: 필터의 개수는 출력의 채널 수
-        FN, C, FH, FW = self.W.shape
-
-        # 입력의 형상
+        # 입력의 형상(데이트 수, 채널 수, 높이, 폭)
         N, C, H, W = x.shape
 
-        # 출력의 높이, 폭 계산
-        out_h = int((H + 2 * self.pad - FH) / self.stride + 1)
-        out_w = int((W + 2 * self.pad - FW) / self.stride + 1)
+        # 필터의 형상(필터 개수, 채널, 필터 높이, 필터 폭): 필터의 개수 = 출력의 채널 수
+        FN, C, FH, FW = self.W.shape
 
-        # 3차원 입력 데이터(C, H, W)들을 하나의 필터의 크기(C, H, W) 만큼 잘라서 1차원 벡터의 배열(행렬)로 풀어서 변환
+        # 출력의 높이, 폭 계산
+        OH = int((H + 2 * self.pad - FH) / self.stride + 1)
+        OW = int((W + 2 * self.pad - FW) / self.stride + 1)
+
+        # 4차원 입력 데이터(N, C, H, W)를 하나의 필터의 크기(C, FH, FW) 만큼 잘라서 1차원 벡터의 배열(2차원 행렬)로 풀어서 변환
+        # col_x의 형상: (N * OH * OW, C * FH * FW)
         col_x = im2col(x, FH, FW, self.stride, self.pad)
 
-        # 2차원 필터(FH, FW)들을 1차원 벡터의 배열(행렬)로 풀어서 변환 후, 입력 데이터와의 내적곱을 위해 전치
+        # 4차원 필터(FN, C, FH, FW)를 1차원 벡터의 배열(2차원 행렬)로 풀어서 변환 후, 입력 데이터와의 내적곱을 위해 전치
+        # col_W의 형상: (C * FH * FW, FN)
         col_W = self.W.reshape(FN, -1).T
 
-        # 가중합 계산
+        # 출력 데이터(가중합) 계산: (N * OH * OW, C * FH * FW)(C * FH * FW, FN) + (FN)
+        # out의 형상: (N * OH * OW, FN)
         out = np.dot(col_x, col_W) + self.b
 
-        # 1차원 벡터인 하나의 출력 데이터를 3차원(FN, OH, OW)으로 복구
-        out = out.reshape(N, out_h, out_w, -1).transpose(0, 3, 1, 2)
-
+        # 2차원 행렬인 출력 데이터를 4차원(N, FN, OH, OW)으로 복구
+        # out의 형상: (N, FN, OH, OW)
+        out = out.reshape(N, OH, OW, -1).transpose(0, 3, 1, 2)
 
         # backward 시 사용을 위해 저장
         self.x = x
@@ -353,7 +356,9 @@ class Convolution:
 
 
     def backward(self, dout):
+        # 필터의 형상(필터 개수, 채널, 필터 높이, 필터 폭): 필터의 개수 = 출력의 채널 수
         FN, C, FH, FW = self.W.shape
+
         dout = dout.transpose(0,2,3,1).reshape(-1, FN)
 
         self.db = np.sum(dout, axis=0)
@@ -366,6 +371,61 @@ class Convolution:
         return dx
 
 
+
+# CNN의 풀링 계층: Max Pooling
+class Pooling:
+    def __init__(self, pool_h, pool_w, stride=1):
+        self.pool_h = pool_h # 풀의 높이
+        self.pool_w = pool_w # 풀의 폭
+        self.stride = stride # 보폭
+
+        # 중간 데이터（backward 시 사용）
+        self.x = None # 입력 데이터
+        self.arg_max = None
+
+
+    # x - 4차원 입력 데이터(데이터 수, 채널, 높이, 폭)
+    def forward(self, x):
+        # 입력 데이터 형상
+        N, C, H, W = x.shape
+
+        # 출력의 높이, 폭 계산
+        OH = int((H - self.pool_h) / self.stride + 1)
+        OW = int((W - self.pool_w) / self.stride + 1)
+
+        # 4차원 입력 데이터(N, C, H, W)를 하나의 풀의 크기(pool_h, pool_w) 만큼 잘라서 1차원 벡터의 배열(2차원 행렬)로 풀어서 변환
+        # (N * OH * OW, C * pool_h * pool_w)로 변환된 입력 데이터에서 다시 채널을 독립시킨다.
+        # col의 형상: (N * OH * OW * C, pool_h * pool_w)
+        col = im2col(x, self.pool_h, self.pool_w, self.stride, 0).reshape(-1, self.pool_h * self.pool_w)
+
+        # 각 행에서 최대값을 구한다
+        arg_max = np.argmax(col, axis=1)
+        out = np.max(col, axis=1)
+
+        # 1차원(N * OH * OW * C)을 4차원(N, C, OH, OW)로 변형
+        out = out.reshape(N, OH, OW, C).transpose(0, 3, 1, 2)
+
+
+        # backward 시 사용하기 위한 데이터 저장
+        self.x = x
+        self.arg_max = arg_max
+
+        return out
+
+
+    #
+    def backward(self, dout):
+        dout = dout.transpose(0, 2, 3, 1)
+
+        pool_size = self.pool_h * self.pool_w
+        dmax = np.zeros((dout.size, pool_size))
+        dmax[np.arange(self.arg_max.size), self.arg_max.flatten()] = dout.flatten()
+        dmax = dmax.reshape(dout.shape + (pool_size,))
+
+        dcol = dmax.reshape(dmax.shape[0] * dmax.shape[1] * dmax.shape[2], -1)
+        dx = col2im(dcol, self.x.shape, self.pool_h, self.pool_w, self.stride, 0)
+
+        return dx
 
 
 if __name__ == '__main__':
