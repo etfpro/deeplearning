@@ -33,6 +33,9 @@ class Trainer:
 
         # 최대 훈련 반복 회수
         self.max_iter = int(epochs * self.iter_per_epoch)
+        if self.verbose:
+            print("Max Iterations: ", str(self.max_iter))
+
 
         self.train_loss_list = [] # 매 훈련마다 손실값을 기록하는 리스트
         self.train_acc_list = [] # 매 주기마다 훈련데이터 정확도를 기록하는 리스트
@@ -57,7 +60,7 @@ class Trainer:
             loss = self.network.lossValue
             self.train_loss_list.append(loss)
             if self.verbose:
-                print("train loss:" + str(loss))
+                print("train loss {}: {}".format(i, str(loss)))
 
 
             # 매 주기마다 훈련데이터와 테스트데이터의 정확도 측정
@@ -88,7 +91,7 @@ class Trainer:
         if self.verbose:
             test_acc = self.network.accuracy(self.x_test, self.t_test)
             print("=============== Final Test Accuracy ===============")
-            print("%2.2f%%", test_acc * 100.0)
+            print("%2.2f%%" % (test_acc * 100.0))
 
 
 
