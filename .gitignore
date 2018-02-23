@@ -16,3 +16,11 @@ MakeYourOwnNeuralNetwork/__pycache__/neuralNetwork.cpython-36.pyc
 *.pkl
 *.gz
 MakeYourOwnNeuralNetwork/__pycache__/neuralNetwork.cpython-36.pyc
+FirstStepsWithTensorflow/model/dnn.ckpt-2.data-00000-of-00001
+*.data-00000-of-00001
+*.index
+*.meta
+*.HSK01-VECT3
+FirstStepsWithTensorflow/model/checkpoint
+*.dot
+IntroductionToMachineLearningWithPython/chapter2/tmp

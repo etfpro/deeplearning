@@ -17,7 +17,7 @@ class MultiLayerNet:
     #                   'sigmoid'나 'xavier'로 지정하면 'Xavier 초깃값'으로 설정
     # use_batchnorm : 배치 정규화 사용 여부
     # weight_decay_lambda : 가중치 감소(L2 법칙)의 세기, 0이면 가중치 감소를 수행하지 않음
-    # dropout_ration : dropout 비율, 0이면 dropout을 수행하지 않음
+    # dropout_ratio : dropout 비율, 0이면 dropout을 수행하지 않음
     def __init__(self, input_size, hidden_size_list, output_size, optimizer=Adam(),
                  activation='relu', weight_init_std='relu', use_batchnorm=False,
                  weight_decay_lambda=0, dropout_ratio=0):
