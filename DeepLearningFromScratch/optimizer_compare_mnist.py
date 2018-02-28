@@ -2,6 +2,8 @@ from common.mnist import load_mnist
 from common.optimizer import *
 from common.multiLayerNet import MultiLayerNet
 from common.util import smooth_curve
+import matplotlib.pyplot as plt
+
 
 # 0. MNIST 데이터 읽기==========
 (x_train, t_train), (x_test, t_test) = load_mnist(normalize=True)
@@ -21,9 +23,9 @@ optimizers['Adam'] = Adam()
 networks = {}
 train_loss = {}
 for key in optimizers.keys():
-    networks[key] = MultiLayerNet(
+    networks[key] = MultiLayerNet(optimizer=optimizers[key],
         input_size=784, hidden_size_list=[100, 100, 100, 100],
-        output_size=10)
+        output_size=10, use_batchnorm=True)
     train_loss[key] = []
 
 # 2. 훈련 시작==========

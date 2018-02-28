@@ -139,7 +139,7 @@ class MultiLayerNet:
 
         # Softmax - Cross Entropy Error 계층
         self.lossValue = self.last_layer.forward(a, t) + weight_decay
-
+        return self.lossValue
 
 
     # 정확도 측정

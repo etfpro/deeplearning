@@ -8,7 +8,7 @@ class SGD:
 
 
     # 가중치 업데이트(1회)
-    # params: 업데이트할 가중치 행렬들
+    # params: 업데이트할 가중치 행렬들에 대한 dict
     # grads: 가중치에 대한 미분값(기울기) 행렬
     def update(self, params, grads):
         for key in params.keys():
@@ -16,7 +16,7 @@ class SGD:
 
 
 # Momentum
-# Gradient Descent를 통해 이동하는 과정에 일종의 관성/탄력을 주는 방식
+# Gradient Descent를 통해 이동하는 과정에 일종의 관성/탄력(momentum)을 주는 방식
 # 현재의 기울기를 통해 이동하는 방향과는 별개로, 과거에 이동했던 방식을 기억하면서 그 방향으로 일정 정도를 추가적으로 이동하는 방식
 # 자주 이동하는 방향에 관성이 걸리게 되고, 진동을 하더라도 중앙으로 가는 방향에 힘을 얻기 때문에 SGD에 비해 상대적으로 빠르게 이동할 수 있다.
 # v = momentum * v + learing_rate * 기울기 (v 초기값은 0)
@@ -30,7 +30,7 @@ class Momentum:
 
 
     # 가중치 업데이트(1회)
-    # params: 업데이트할 가중치 행렬들
+    # params: 업데이트할 가중치 행렬들에 대한 dict
     # grads: 가중치에 대한 미분값(기울기) 행렬
     def update(self, params, grads):
         # 최초에는 업데이트할 가중치와 동일한 형상의 행렬로 초기화(초기값은 0)
@@ -47,15 +47,16 @@ class Momentum:
 
 
 # AdaGrad - Adaptive Gradients, 학습률 감소 기법
+# 학습을 진행하면서 학습률을 점차 줄여가는 방법으로, 처음에는 크게 학습하다가 조금씩 작게 학습
 # 가중치를 update할 때 각각의 가중치마다 학습률을 다르게 설정해서 이동
 # 기본적인 아이디어는 '지금까지 적게 갱신된 가중치들은 학습률을 크게 하고, 지금까지 많이 갱신된 가중치들은 학습률을 작게 하자’라는 것
 # 자주 등장하거나 변화를 많이 한 가중치들의 경우 최적에 가까이 있을 확률이 높기 때문에, 가중치를 작게 하여 작은 크기로 이동하면서 세밀한 값을 조정하고,
 # 자주 등장하지 않거나 적게 변화한 가중치들은 최적 값에 도달하기 위해서는 많이 이동해야할 확률이 높기 때문에, 먼저 빠르게 손실값을 줄이는 방향으로 이동하려는 방식
-# 과거의 기울기를 제곱하여 계속 더해가기 대문에, 학습을 진행할수록 갱신 강도가 약해지는 문제가 있기 때문에, 무한히 계속 학습한다면 어느 순간 갱신량이 0이되어
-# 전혀 갱신되지 않는 문제가 발생
-# 이 문제를 개선하기 위해서 먼 과거의 기울기는 서서히 잊고 새로운 기울기 정보를 크게 반영(지수이동평균)하는 RMSProp 기법이 있다.
 # h = h + 기울기^2 (h 초기값은 0)
-# W = W - learning_rate/sqrt(h) * 기울기
+# W = W - 학습률/sqrt(h) * 기울기
+# 과거의 기울기를 제곱하여 계속 더해가기 대문에, 학습을 진행할수록 갱신 강도가 약해지는 문제가 있음
+# 무한히 계속 학습한다면 어느 순간 갱신량이 0이되어 전혀 갱신되지 않는 문제가 발생
+# 이 문제를 개선하기 위해서 먼 과거의 기울기는 서서히 잊고 새로운 기울기 정보를 크게 반영(지수이동평균)하는 RMSProp 기법이 있다.
 class AdaGrad:
     def __init__(self, lr=0.01):
         self.lr = lr
@@ -63,7 +64,7 @@ class AdaGrad:
 
 
     # 가중치 업데이트(1회)
-    # params: 업데이트할 가중치 행렬들
+    # params: 업데이트할 가중치 행렬들에 대한 dict
     # grads: 가중치에 대한 미분값(기울기) 행렬
     def update(self, params, grads):
         # 최초에는 업데이트할 가중치와 동일한 형상의 행렬로 초기화(초기값은 0)
@@ -86,7 +87,7 @@ class AdaGrad:
 # 즉, 과거 기울기의 반영 규모를 기하급수적으로 감소시킴
 # 강화학습에서 많이 사용
 # h = decay_rate * h + (1 - decay_rate) * 기울기^2 (h 초기값은 0)
-# W = W - learning_rate/sqrt(h) * 기울기
+# W = W - 학습률/sqrt(h) * 기울기
 class RMSProp:
     def __init__(self, lr=0.01, decay_rate=0.99):
         self.lr = lr
@@ -106,19 +107,18 @@ class RMSProp:
 
 
 
-# Adaptive Moment Estimation: Mementum(관성) + RMSProp(학습률 감소) 기법 혼합
+# Adam - Adaptive Moment Estimation, Momentum(관성) + RMSProp(학습률 감소) 기법 혼합
 # 이 방식에서는 Momentum 방식과 유사하게 지금까지 계산해온 기울기의 지수평균을 저장하며, RMSProp과 유사하게 기울기의 제곱값의 지수평균을 저장한다.
 # m = beta1 * m + (1 - beta1) * 기울기 (m 초기값은 0)
 # v = beta2 * v + (1 - beta2) * 기울기^2 (v 초기값은 0)
-# W = W - learning_rate/sqrt(v) * m
+# W = W - 학습률/sqrt(v) * m
 class Adam:
     def __init__(self, lr=0.01, beta1=0.9, beta2=0.999):
         self.lr = lr
         self.beta1 = beta1 # 1차 momentum용 계수 - momentum
         self.beta2 = beta2 # 2차 momentum용 계수 - decay_rate
-        self.iter = 0
-        self.m = None
-        self.v = None
+        self.m = None # Momentum의 v(속도)에 해당
+        self.v = None #RMSProp의 h에 해당
 
     def update(self, params, grads):
         if self.m is None:
@@ -127,20 +127,12 @@ class Adam:
                 self.m[key] = np.zeros_like(val)
                 self.v[key] = np.zeros_like(val)
 
-        #self.iter += 1
-        #lr_t = self.lr * np.sqrt(1.0 - self.beta2**self.iter) / (1.0 - self.beta1**self.iter)
-
         for key in params.keys():
             self.m[key] = self.beta1 * self.m[key] + (1 - self.beta1) * grads[key]
             self.v[key] = self.beta2 * self.v[key] + (1 - self.beta2) * grads[key]**2
-            #params[key] -= lr_t * self.m[key] / (np.sqrt(self.v[key]) + 1e-7)
             unbias_m = self.m[key] / (1 - self.beta1)
             unbias_v = self.v[key] / (1 - self.beta2)
-            params[key] -= self.lr * unbias_m / (np.sqrt(unbias_v) + 1e-7)
-
-            # unbias_m += (1 - self.beta1) * (grads[key] - self.m[key]) # correct bias
-            # unbisa_b += (1 - self.beta2) * (grads[key]*grads[key] - self.v[key]) # correct bias
-            # params[key] += self.lr * unbias_m / (np.sqrt(unbias_b) + 1e-7)
+            params[key] -= (self.lr / (np.sqrt(unbias_v) + 1e-7)) * unbias_m
 
 
 
