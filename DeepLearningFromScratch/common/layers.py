@@ -8,6 +8,8 @@ from common.util import *
 
 
 # Affine 변환 계층 (X·W + b)
+# 신경망의 학습의 대상이 되는 W와 b
+# CNN에서도 사용
 class Affine:
     def __init__(self, W, b):
         self.W = W
@@ -16,10 +18,9 @@ class Affine:
         # 순전파 입력을 역전파(미분) 시 사용을 위해 저장
         self.x = None
 
-        # 가중치에 대한 미분값 (이전 계층으로 전달하지 않고 내부에서만 유지)
+        # 가중치와 편향에 대한 미분값(기울기)(이전 계층으로 전달하지 않고 내부에서만 유지)
+        # 학습 시 W와 b를 갱신하기 위해서 사용
         self.dW = None
-
-        # 편차에 대한 미분값 (이전 계층으로 전달하지 않고 내부에서만 유지)
         self.db = None
 
         # 입력값의 형상(텐서 대응)
@@ -30,10 +31,9 @@ class Affine:
     def forward(self, x):
         self.original_x_shape = x.shape
 
-        # 입력을 행렬(2차원 배열)로 변환
+        # 입력을 행렬(2차원 배열)로 변환: 입력 데이터는 CNN인 경우 4차원일 수 있음
         # 행: 데이터의 수, 열: 1개의 입력값을 1행으로 풀어놓은 상태
-        x = x.reshape(x.shape[0], -1)
-        self.x = x
+        self.x = x.reshape(x.shape[0], -1)
 
         out = np.dot(self.x, self.W) + self.b
         return out
@@ -43,12 +43,14 @@ class Affine:
     # 입력 - dout은 다음 계층(활성화 함수 계층)의 미분 값
     # 출력 - 이전 계충(활성화함수 계층)으로 전파할 값
     def backward(self, dout):
-        self.dW = np.dot(self.x.T, dout)
+        # 순전파의 편향 덧셈은 각각의 데이터에 더해지기 때문에,
+        # 역전파 때에는 각 데이터의 역전파 값이 편향의 원소에 모여야 함
         self.db = np.sum(dout, axis=0)
 
+        self.dW = np.dot(self.x.T, dout)
+
         dx = np.dot(dout, self.W.T)
-        # 행렬(2차원 배열) 형태의 입력 데이터를 원래의 형상으로 변환(텐서 대응)
-        dx = dx.reshape(*self.original_x_shape)
+        dx = dx.reshape(*self.original_x_shape) # 행렬(2차원 배열) 형태의 입력 데이터를 원래의 형상으로 변환(CNN의 4차원 텐서 대응)
         return dx
 
 
@@ -291,7 +293,7 @@ class SoftmaxWithLoss:
             dx = self.y.copy()
             dx[np.arange(batch_size), self.t] -= 1 # 정답 레이블에 해당하는 항목에서만 1(정답 확률)을 뺀다
 
-        # 배치의 수로 나눠서 데이터 1개당 오차를 전파 ????????????????
+        # 배치의 수로 나눠서 데이터 1개당 오차를 전파
         dx /= batch_size
         return dx
 
