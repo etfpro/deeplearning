@@ -3,6 +3,7 @@ from common.mnist import load_mnist
 from common.util import smooth_curve
 from common.multiLayerNet import MultiLayerNet
 from common.optimizer import *
+import matplotlib.pyplot as plt
 
 
 # 0. MNIST 데이터 읽기==========
