@@ -64,7 +64,7 @@ class Affine:
 # Training 할 때는 mini-batch의 평균과 분산으로 normalize 하고,
 # Test(추론) 할 때는 계산해 놓은 이동평균으로 normalize 한다.
 # Normalize 한 이후에는 scale factor(gamma)와 shift factor(beta)를 이용하여 새로운 값을 만들고, 이 값을 출력
-# 이 Scale factor와 Shift factor는 다른 레이어에서 weight를 학습하듯이 역전파에서 학습
+# 이 Scale factor(gamma)와 Shift factor(beta)는 다른 레이어에서 weight를 학습하듯이 역전파에서 학습
 # http://arxiv.org/abs/1502.03167
 class BatchNormalization:
     # gmma - Scale factor(초기값 1)
@@ -78,7 +78,8 @@ class BatchNormalization:
         self.input_shape = None
 
         # 시험(추론)할 때 사용할 평균과 분산 - Training 시에 미니배치에서 구한 평균과 분산의 이동평균
-        self.running_mean = None
+        # 시험(추론)에서는 미니배치의 평균과 분산을 사용할 수 없기 때문에, training 시 구해 놓는다.
+        # 미니배치의 평균과 분산은 입력값의 각 속성별로 구한다.
         self.running_var = None
         self.momentum = momentum # 이동평균 계산 시 사용할 momentum
 
@@ -86,6 +87,8 @@ class BatchNormalization:
         self.batch_size = None
         self.xc = None # 편차
         self.std = None # 표준편차
+
+        # backward를 통해 계산된 기울기
         self.dgamma = None # Sacel factor 미분값
         self.dbeta = None # Shift factor 미분값
 
@@ -96,8 +99,7 @@ class BatchNormalization:
 
         # 4차원 합성곱 데이터는 2차원으로 변경
         if x.ndim != 2:
-            N, _, _, _ = x.shape
-            x = x.reshape(N, -1)
+            x = x.reshape(x.shape[0], -1)
 
         # 순전파 실행
         out = self.__forward(x, train_flg)
@@ -108,13 +110,15 @@ class BatchNormalization:
 
     # 입력 - x는 Affine 계층의 출력값
     def __forward(self, x, train_flg):
+        # 시험(추론)할 때 사용할 평균과 분산을 하나의 입력의 속성 수 만큼으로 초기화
+        # 시험(추론)에서는 미니배치의 평균과 분산을 사용할 수 없기 때문에, training 시 구해 놓는다.
+        # 또한 미니배치의 평균과 분산은 입력값의 각 속성별로 구한다.
         if self.running_mean is None:
-            N, D = x.shape
+            _, D = x.shape
             self.running_mean = np.zeros(D)
             self.running_var = np.zeros(D)
 
-        if train_flg:
-            # Training - 미니배치의 평균과 분산으로 정규화
+        if train_flg: # Training - 미니배치의 평균과 분산으로 정규화
 
             # 미니배치의 평균 계산
             mu = x.mean(axis=0) # 미니배치 데이터 평균 - 동일한 열의 평균
@@ -149,8 +153,7 @@ class BatchNormalization:
     def backward(self, dout):
         # 4차원 합성곱 데이터는 2차원으로 변경
         if dout.ndim != 2:
-            N, _, _, _ = dout.shape
-            dout = dout.reshape(N, -1)
+            dout = dout.reshape(dout.shape[0], -1)
 
         # 역전파 실행
         dx = self.__backward(dout)

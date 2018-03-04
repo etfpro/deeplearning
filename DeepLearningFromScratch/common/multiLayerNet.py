@@ -15,7 +15,7 @@ class MultiLayerNet:
     # weight_init_std : 가중치의 표준편차 지정（e.g. 0.01）
     #                   'relu'나 'he'로 지정하면 'He 초깃값'으로 설정
     #                   'sigmoid'나 'xavier'로 지정하면 'Xavier 초깃값'으로 설정
-    # use_batchnorm : 배치 정규화 사용 여부
+    # use_batchnorm : 배치 정규화 사용 여부, 배치 정규화 계층에서는 추가적으로 Scale factor(gamma)와 Shift factor(beta)를 학습
     # weight_decay_lambda : 가중치 감소(L2 법칙)의 세기, 0이면 가중치 감소를 수행하지 않음
     # dropout_ratio : dropout 비율, 0이면 dropout을 수행하지 않음
     def __init__(self, input_size, hidden_size_list, output_size, optimizer=Adam(),
@@ -180,13 +180,18 @@ class MultiLayerNet:
         for layer in layers:
             dout = layer.backward(dout)
 
+
+        ########################################################################
         # 미분결과(기울기) 저장
+        ########################################################################
         grads = {}
         for i in range(1, self.hidden_layer_num + 2): # 첫번째 hidden layer ~ output layer
             grads['W' + str(i)] = self.layers['Affine' + str(i)].dW + \
-                                  self.weight_decay_lambda * self.layers['Affine' + str(i)].W # 가중치감소 미분값(람다 * W)을 더한다
+                                  self.weight_decay_lambda * self.layers['Affine' + str(i)].W # 가중치감소 미분값(람다 * W)을 더다
             grads['b' + str(i)] = self.layers['Affine' + str(i)].db
 
+            # 배치 정규화를 사용하는 경우, 가중치 W와 편향 b와는 별개로 Scale factor(gamma)와 Shift factor(beta)를 학습
+            # 마지막 출력층에는 배치 정규화 계층이 존재하지 않음
             if self.use_batchnorm and i != self.hidden_layer_num + 1:
                 grads['gamma' + str(i)] = self.layers['BatchNorm' + str(i)].dgamma
                 grads['beta' + str(i)] = self.layers['BatchNorm' + str(i)].dbeta
