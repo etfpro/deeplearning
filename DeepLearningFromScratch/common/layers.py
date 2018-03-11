@@ -80,6 +80,7 @@ class BatchNormalization:
         # 시험(추론)할 때 사용할 평균과 분산 - Training 시에 미니배치에서 구한 평균과 분산의 이동평균
         # 시험(추론)에서는 미니배치의 평균과 분산을 사용할 수 없기 때문에, training 시 구해 놓는다.
         # 미니배치의 평균과 분산은 입력값의 각 속성별로 구한다.
+        self.running_mean = None
         self.running_var = None
         self.momentum = momentum # 이동평균 계산 시 사용할 momentum
 
@@ -87,6 +88,7 @@ class BatchNormalization:
         self.batch_size = None
         self.xc = None # 편차
         self.std = None # 표준편차
+        self.xz = None # 표준값
 
         # backward를 통해 계산된 기울기
         self.dgamma = None # Sacel factor 미분값
@@ -121,32 +123,32 @@ class BatchNormalization:
         if train_flg: # Training - 미니배치의 평균과 분산으로 정규화
 
             # 미니배치의 평균 계산
-            mu = x.mean(axis=0) # 미니배치 데이터 평균 - 동일한 열의 평균
+            mean = x.mean(axis=0) # 미니배치 데이터 평균 - 동일한 열의 평균
 
             # 미니배치의 분산 계산
-            xc = x - mu
+            xc = x - mean
             var = np.mean(xc ** 2, axis=0) # 동일한 열의 분산
 
             # 미니배치의 표준값 계산
             std = np.sqrt(var + 10e-7)
-            xn = xc / std
+            xz = xc / std
 
             # 역전파(backward) 시 사용할 변수 저장
             self.batch_size = x.shape[0] # 미니배치 수
             self.xc = xc # 편차
-            self.xn = xn # 표준값
+            self.xz = xz # 표준값
             self.std = std # 표준편차
 
             # 테스트(추론) 시 사용할 평균과 분산에 대한 지수 이동평균(Moving Average) 계산
-            self.running_mean = self.momentum * self.running_mean + (1 - self.momentum) * mu
+            self.running_mean = self.momentum * self.running_mean + (1 - self.momentum) * mean
             self.running_var = self.momentum * self.running_var + (1 - self.momentum) * var
         else:
             # 테스트(추론) - 미니배치를 사용할 수 없기 때문에 training에 계산한 이동평균과 분산으로 정규화
             xc = x - self.running_mean # 편차
-            xn = xc / ((np.sqrt(self.running_var + 10e-7))) # 표준값
+            xz = xc / ((np.sqrt(self.running_var + 10e-7))) # 표준값
 
         # Scale & Shift
-        out = self.gamma * xn + self.beta
+        out = self.gamma * xz + self.beta
         return out
 
 
@@ -163,20 +165,20 @@ class BatchNormalization:
         return dx
 
     def __backward(self, dout):
-        # Scale factor 미분
-        self.dgamma = np.sum(self.xn * dout, axis=0)
+        # Scale factor(gamma) 미분: gamma는 scalar 값이므로 합을 구한다.
+        self.dgamma = np.sum(self.xz * dout, axis=0)
 
-        # Shift factor 미분
+        # Shift factor(beta) 미분: beta는 scalar 값이므로 합을 구한다.
         self.dbeta = dout.sum(axis=0)
 
         # 이전 계층으로 전달할 미분
-        dxn = self.gamma * dout
-        dxc = dxn / self.std
-        dstd = -np.sum((dxn * self.xc) / (self.std * self.std), axis=0)
+        dxz = self.gamma * dout
+        dxc = dxz / self.std
+        dstd = -np.sum((dxz * self.xc) / (self.std * self.std), axis=0)
         dvar = 0.5 * dstd / self.std
         dxc += (2.0 / self.batch_size) * self.xc * dvar
-        dmu = np.sum(dxc, axis=0)
-        dx = dxc - dmu / self.batch_size
+        dmean = np.sum(dxc, axis=0)
+        dx = dxc - dmean / self.batch_size
         return dx
 
 
